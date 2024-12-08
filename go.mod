@@ -2,7 +2,11 @@ module github.com/AnTengye/NodeConvertor
 
 go 1.23.4
 
-require github.com/kataras/iris/v12 v12.2.11
+require (
+	github.com/go-resty/resty/v2 v2.16.2
+	github.com/kataras/iris/v12 v12.2.11
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
@@ -14,7 +18,6 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/flosch/pongo2/v4 v4.0.2 // indirect
-	github.com/go-resty/resty/v2 v2.16.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gomarkdown/markdown v0.0.0-20240328165702-4d01890c35c0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -50,5 +53,4 @@ require (
 	golang.org/x/time v0.6.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
