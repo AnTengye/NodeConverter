@@ -3,9 +3,15 @@
 1. 维护节点的格式定义
 2. 提供一个api服务用以实现节点格式转换
 
+已支持的类型：
+- `VLESS-TCP-XTLS-Vision-REALITY`
+- `VLESS-gRPC-REALITY`
+- `VLESS-TCP-XTLS-Vision`
+
 ## API服务
 1. `GET /to-clash` 将分享链接转换为 Clash 节点格式
 2. `GET /to-share` 将 Clash 节点转换为分享链接
+
 
 ## 分享链接
 通常分享的链接格式为：

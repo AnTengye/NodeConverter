@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/AnTengye/NodeConvertor/handler"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/accesslog"
 )
@@ -50,8 +51,7 @@ func main() {
 	// Register the middleware (UseRouter to catch http errors too).
 	app.UseRouter(ac.Handler)
 
-	app.Get("/to-share", ClashToShare)
-	app.Get("/to-clash", ShareToClash)
-
+	app.Get("/to-share", handler.ClashToShare)
+	app.Get("/to-clash", handler.ShareToClash)
 	app.Listen(":9870")
 }

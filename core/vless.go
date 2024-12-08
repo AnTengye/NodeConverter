@@ -1,21 +1,24 @@
-package main
+package core
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 var _ Node = (*VLESSNode)(nil)
 
 type VLESSNode struct {
-	Normal
-	TLSConfig
-	NetworkConfig
-	Uuid           string `json:"uuid" yaml:"uuid"`                       // 必须，VLESS 用户 ID
-	Flow           string `json:"flow" yaml:"flow"`                       // VLESS 子协议，可用值为 xtls-rprx-vision
-	PacketEncoding string `json:"packet-encoding" yaml:"packet-encoding"` // VLESS 子协议，可用值为 xudp
+	Normal         `yaml:",inline"`
+	TLSConfig      `yaml:",inline"`
+	NetworkConfig  `yaml:",inline"`
+	Uuid           string `json:"uuid" yaml:"uuid,omitempty"` // 必须，VLESS 用户 ID
+	Flow           string `json:"flow" yaml:"flow,omitempty"` // VLESS 子协议，可用值为 xtls-rprx-vision
+	PacketEncoding string `json:"packet-encoding" yaml:"packet-encoding,omitempty"`
 }
 
 // 4.1 基本信息段
@@ -226,15 +229,20 @@ func (node *VLESSNode) ToShare() string {
 	builder.WriteString(node.Server)
 	builder.WriteString(":")
 	builder.WriteString(strconv.Itoa(node.Port))
-	builder.WriteString("?encryption=none?type=tcp")
-	// flow
-	builder.WriteString("&flow=")
-	builder.WriteString(node.Flow)
+	builder.WriteString("?encryption=none")
+	if node.Network != "" {
+		builder.WriteString("&type=")
+		builder.WriteString(node.Network)
+	}
+	if node.Flow != "" {
+		builder.WriteString("&flow=")
+		builder.WriteString(node.Flow)
+	}
 	if node.SNI != "" {
 		builder.WriteString("&sni=")
 		builder.WriteString(node.ServerName)
 	}
-	if node.Fingerprint != "" {
+	if node.ClientFingerprint != "" {
 		builder.WriteString("&fp=")
 		builder.WriteString(node.ClientFingerprint)
 	}
@@ -262,9 +270,6 @@ func (node *VLESSNode) ToShare() string {
 }
 
 func (node *VLESSNode) FromShare(s string) error {
-	if !strings.HasPrefix(s, "vless://") {
-		return fmt.Errorf("invalid vless node")
-	}
 	split := strings.Split(s, "?")
 	if len(split) < 2 {
 		return fmt.Errorf("invalid vless node format")
@@ -283,13 +288,7 @@ func (node *VLESSNode) FromShare(s string) error {
 
 func (node *VLESSNode) base(s string) error {
 	node.Type = "vless"
-	node.Flow = "xtls-rprx-vision"
 	node.ClientFingerprint = "chrome"
-	split := strings.Split(s[len("vless://"):], "?")
-	if len(split) < 2 {
-		return fmt.Errorf("invalid vless node format")
-	}
-	s = split[0]
 	// Split user info and host info
 	parts := strings.Split(s, "@")
 	if len(parts) != 2 {
@@ -315,6 +314,7 @@ func (node *VLESSNode) base(s string) error {
 	node.Port = port
 	return nil
 }
+
 func (node *VLESSNode) extra(extra string) error {
 	// 获取#后面的信息
 	customInfoList := strings.Split(extra, "#")
@@ -332,12 +332,15 @@ func (node *VLESSNode) extra(extra string) error {
 		key := parts[0]
 		value := parts[1]
 		switch key {
+		case "type":
+			node.Network = value
 		case "flow":
 			node.Flow = value
 		case "sni":
 			node.ServerName = value
 		case "fp":
-			node.Fingerprint = value
+			node.ClientFingerprint = value
+			node.TLS = true
 		case "alpn":
 			node.ALPN = strings.Split(value, ",")
 		case "pbk":
@@ -357,6 +360,12 @@ func (node *VLESSNode) extra(extra string) error {
 				}
 				node.TLS = true
 			}
+		case "serviceName":
+			if node.GRPCOpts == nil {
+				node.GRPCOpts = &GRPCNetworkConfig{}
+			}
+			node.GRPCOpts.GRPCServiceName = value
+
 		default:
 			continue
 		}
@@ -375,32 +384,25 @@ func (node *VLESSNode) check() error {
 	if node.ServerName == "" {
 		node.ServerName = node.Server
 	}
+	if node.TLS && node.Network == "tcp" {
+		node.Flow = "xtls-rprx-vision"
+	}
 	return nil
 }
 
 func (node *VLESSNode) ToClash() string {
-	builder := strings.Builder{}
-	builder.WriteString(fmt.Sprintf("name: %s\n", node.Name))
-	builder.WriteString(fmt.Sprintf("type: %s\n", node.Type))
-	builder.WriteString(fmt.Sprintf("server: %s\n", node.Server))
-	builder.WriteString(fmt.Sprintf("port: %d\n", node.Port))
-	builder.WriteString(fmt.Sprintf("uuid: %s\n", node.Uuid))
-	builder.WriteString(fmt.Sprintf("network: %s\n", node.Type))
-	builder.WriteString(fmt.Sprintf("flow: %s\n", node.Flow))
-	builder.WriteString(fmt.Sprintf("tls: %t\n", node.TLS))
-	if node.TLS {
-		if node.RealityOpts != nil {
-			builder.WriteString(fmt.Sprintf("reality-opts:\n"))
-			builder.WriteString(fmt.Sprintf("  public-key: %s\n", node.RealityOpts.PublicKey))
-			builder.WriteString(fmt.Sprintf("  short-id: %s\n", node.RealityOpts.ShortID))
-		}
-		builder.WriteString(fmt.Sprintf("client-fingerprint: %s\n", node.Fingerprint))
+	d, err := yaml.Marshal(&node)
+	if err != nil {
+		log.Fatalf("error: %v", err)
 	}
-	return builder.String()
+	return string(d)
 }
 
-func (node *VLESSNode) FromClash(s string) error {
-	panic("implement me")
+func (node *VLESSNode) FromClash(s []byte) error {
+	if err := yaml.Unmarshal(s, node); err != nil {
+		return fmt.Errorf("unmarshal vless node error: %v", err)
+	}
+	return nil
 }
 
 func NewVLESSNode() Node {
