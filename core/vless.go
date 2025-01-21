@@ -10,9 +10,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var _ Node = (*VLESSNode)(nil)
+var _ Node = (*VlessNode)(nil)
 
-type VLESSNode struct {
+type VlessNode struct {
 	Normal         `yaml:",inline"`
 	TLSConfig      `yaml:",inline"`
 	NetworkConfig  `yaml:",inline"`
@@ -221,7 +221,7 @@ type VLESSNode struct {
 //
 // 必须使用 encodeURIComponent 转义。此项可能为空字符串。
 // 通用格式(VLESS+reality+uTLS+Vision)
-func (node *VLESSNode) ToShare() string {
+func (node *VlessNode) ToShare() string {
 	builder := strings.Builder{}
 	builder.WriteString("vless://")
 	builder.WriteString(node.Uuid)
@@ -269,7 +269,7 @@ func (node *VLESSNode) ToShare() string {
 	return builder.String()
 }
 
-func (node *VLESSNode) FromShare(s string) error {
+func (node *VlessNode) FromShare(s string) error {
 	split := strings.Split(s, "?")
 	if len(split) < 2 {
 		return fmt.Errorf("invalid vless node format")
@@ -286,7 +286,7 @@ func (node *VLESSNode) FromShare(s string) error {
 	return nil
 }
 
-func (node *VLESSNode) base(s string) error {
+func (node *VlessNode) base(s string) error {
 	node.Type = "vless"
 	node.ClientFingerprint = "chrome"
 	// Split user info and host info
@@ -315,7 +315,7 @@ func (node *VLESSNode) base(s string) error {
 	return nil
 }
 
-func (node *VLESSNode) extra(extra string) error {
+func (node *VlessNode) extra(extra string) error {
 	// 获取#后面的信息
 	customInfoList := strings.Split(extra, "#")
 	if len(customInfoList) < 2 {
@@ -372,7 +372,7 @@ func (node *VLESSNode) extra(extra string) error {
 	}
 	return nil
 }
-func (node *VLESSNode) check() error {
+func (node *VlessNode) check() error {
 	if node.RealityOpts != nil {
 		if node.ClientFingerprint == "" {
 			return fmt.Errorf("reality-opts need client-fingerprint")
@@ -390,7 +390,7 @@ func (node *VLESSNode) check() error {
 	return nil
 }
 
-func (node *VLESSNode) ToClash() string {
+func (node *VlessNode) ToClash() string {
 	d, err := yaml.Marshal(&node)
 	if err != nil {
 		log.Fatalf("error: %v", err)
@@ -398,7 +398,7 @@ func (node *VLESSNode) ToClash() string {
 	return string(d)
 }
 
-func (node *VLESSNode) FromClash(s []byte) error {
+func (node *VlessNode) FromClash(s []byte) error {
 	if err := yaml.Unmarshal(s, node); err != nil {
 		return fmt.Errorf("unmarshal vless node error: %v", err)
 	}
@@ -406,5 +406,5 @@ func (node *VLESSNode) FromClash(s []byte) error {
 }
 
 func NewVLESSNode() Node {
-	return &VLESSNode{}
+	return &VlessNode{}
 }

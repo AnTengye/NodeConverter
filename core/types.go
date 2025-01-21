@@ -1,11 +1,20 @@
 package core
 
+type NodeType string
+
+const (
+	NodeTypeShadowSocks NodeType = "ss"
+	NodeTypeVMess       NodeType = "vmess"
+	NodeTypeTrojan      NodeType = "trojan"
+	NodeTypeVLESS       NodeType = "vless"
+)
+
 // 参考文档：
 // https://wiki.metacubex.one/
 
 type Normal struct {
-	Name string `json:"name" yaml:"name"` // 必须，代理名称，不可重复
-	Type string `json:"type" yaml:"type"` // 必须，代理节点类型
+	Name string   `json:"name" yaml:"name"` // 必须，代理名称，不可重复
+	Type NodeType `json:"type" yaml:"type"` // 必须，代理节点类型
 
 	Server string `json:"server" yaml:"server"`
 	Port   int    `json:"port" yaml:"port"`
