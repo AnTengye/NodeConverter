@@ -1,11 +1,20 @@
 package core
 
+type NodeType string
+
+const (
+	NodeTypeShadowSocks NodeType = "ss"
+	NodeTypeVMess       NodeType = "vmess"
+	NodeTypeTrojan      NodeType = "trojan"
+	NodeTypeVLESS       NodeType = "vless"
+)
+
 // 参考文档：
 // https://wiki.metacubex.one/
 
 type Normal struct {
-	Name string `json:"name" yaml:"name"` // 必须，代理名称，不可重复
-	Type string `json:"type" yaml:"type"` // 必须，代理节点类型
+	Name string   `json:"name" yaml:"name"` // 必须，代理名称，不可重复
+	Type NodeType `json:"type" yaml:"type"` // 必须，代理节点类型
 
 	Server string `json:"server" yaml:"server"`
 	Port   int    `json:"port" yaml:"port"`
@@ -21,6 +30,10 @@ type Normal struct {
 	DialerProxy string `json:"dialer-proxy" yaml:"dialer-proxy,omitempty"`
 
 	Smux Smux `json:"smux" yaml:"smux,omitempty"`
+}
+
+func (n *Normal) SetName(name string) {
+	n.Name = name
 }
 
 type Smux struct {
@@ -55,16 +68,6 @@ type RealityTlsConfig struct {
 	ShortID   string `json:"short-id" yaml:"short-id,omitempty"`
 }
 
-// network: http
-// http-opts:
-//
-//	method: "GET"
-//	path:
-//	- '/'
-//	- '/video'
-//	headers:
-//	  Connection:
-//	  - keep-alive
 type NetworkConfig struct {
 	Network string `json:"network" yaml:"network,omitempty"`
 
@@ -74,13 +77,22 @@ type NetworkConfig struct {
 	WSOpts   *WSNetworkConfig   `json:"ws-opts" yaml:"ws-opts,omitempty"`
 }
 
+// HTTPNetworkConfig
+//
+//	method: "GET"
+//	path:
+//	- '/'
+//	- '/video'
+//	headers:
+//	  Connection:
+//	  - keep-alive
 type HTTPNetworkConfig struct {
 	Method  string              `json:"method" yaml:"method,omitempty"`
 	Path    []string            `json:"path" yaml:"path,omitempty"`
 	Headers map[string][]string `json:"headers" yaml:"headers,omitempty"`
 }
 
-// h2-opts:
+// H2NetworkConfig
 //
 //	host:
 //	- example.com
@@ -94,7 +106,7 @@ type GRPCNetworkConfig struct {
 	GRPCServiceName string `json:"grpc-service-name" yaml:"grpc-service-name,omitempty"`
 }
 
-// ws-opts:
+// WSNetworkConfig
 //
 //	path: /path
 //	headers:

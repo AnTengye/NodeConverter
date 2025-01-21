@@ -1,19 +1,103 @@
 # 节点转换 NodeConverter
+
 项目实现的目的：
+
 1. 维护节点的格式定义
 2. 提供一个api服务用以实现节点格式转换
 
-已支持的类型：
-- `VLESS-TCP-XTLS-Vision-REALITY`
-- `VLESS-gRPC-REALITY`
-- `VLESS-TCP-XTLS-Vision`
+## 目前支持以下转换
 
-## API服务
-1. `GET /to-clash` 将分享链接转换为 Clash 节点格式
-2. `GET /to-share` 将 Clash 节点转换为分享链接
+| 类型          | 作为源类型 | 作为目标类型 | 参数     |
+|-------------|:-----:|:------:|--------|
+| Clash       |   ×   |   ✓    | clash  |
+| SS (SIP002) |   ✓   |   ×    | ss     |
+| Trojan      |   ✓   |   ×    | trojan |
+| V2Ray       |   ✓   |   ×    | v2ray  |
+| Auto        |   ×   |   ✓    | auto   |
+
+## 使用
+
+> 即生成的订阅使用 **默认设置**
+
+### 基础调用
+
+```txt
+http://127.0.0.1:25500/sub?target=%TARGET%&url=%URL%&config=%CONFIG%
+```
+
+### 调用说明
+
+| 调用参数   | 必要性 | 示例                        | 解释                                                                 |
+|--------|:---:|:--------------------------|--------------------------------------------------------------------|
+| target | 必要  | clash                     | 指想要生成的配置类型，详见上方 [目前支持以下转换](#目前支持以下转换) 中的参数,默认clash                 |
+| url    | 必要  | https%3A%2F%2Fwww.xxx.com | 指机场所提供的订阅链接或代理节点的分享链接                                              |
+
+### 进阶链接
+
+#### 调用地址 (进阶)
+
+```txt
+http://127.0.0.1:25500/sub?target=%TARGET%&url=%URL%&include=%INCLUDE%····
+```
+
+#### 调用说明 (进阶)
+包含上面基础的参数，支持以下参数：
+
+| 调用参数          | 必要性 | 示例              | 解释                                                                                                                                                                                                          |
+| ------------- | :-: |:----------------| :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| include       |  可选 | 详见下文中 `Include` | 指仅保留匹配到的节点，支持正则匹配，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置                                                                                                                              |
+| exclude       |  可选 | 详见下文中 `Exclude` | 指排除匹配到的节点，支持正则匹配，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置                                                                                                                               |
+| rename        |  可选 | 详见下文中 `Rename`  | 用于自定义重命名，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置                                                                                                                                       |
+
+### 配置文件
+
+> config.yaml配置文件详解
+
+<details>
+<summary><b>[Common] 部分</b></summary>
+
+> 该部分主要涉及到的内容为 **全局的节点排除或保留** 、**各配置文件的基础**
+>
+> 其他设置项目可以保持默认或者在知晓作用的前提下进行修改
+1.  **Exclude**
+
+    > 排除匹配到的节点，支持正则匹配，优先级高于Include
+
+    -   例如:
+
+        ```yaml
+        Exclude: "(到期|剩余流量|时间|官网|产品|平台)"
+        ```
+
+2.  **Include**
+
+    > 仅保留匹配到的节点，支持正则匹配
+
+    -   例如:
+
+        ```ini
+        Include: "(美国|US)"
+        ```
+
+3. **Rename**
+
+    > 重命名节点，支持正则匹配
+    >
+    > 使用方式：原始命名@重命名
+
+    -   例如:
+
+        ```yaml
+        Rename: "中国@中"
+        ```
+        ```yaml
+        Rename: "\(?((x|X)?(\d+)(\.?\d+)?)((\s?倍率?:?)|(x|X))\)?@(倍率:$1)"
+        ```
+
 
 
 ## 分享链接
+
 通常分享的链接格式为：
 
 `vless://xxx@xxx`
@@ -27,15 +111,23 @@
 收集一些常用（有足够的公信力）的节点分享链接的定义。
 
 ### VMess AEAD/VLESS
+
 https://github.com/XTLS/Xray-core/discussions/716
 
 ### Trojan
+
 https://p4gefau1t.github.io/trojan-go/developer/url/
 
+### Shadowsocks
+
+https://github.com/shadowsocks/shadowsocks-org/wiki/SIP002-URI-Scheme
+
 ## clash配置文档
+
 https://wiki.metacubex.one/
 
 ### 收集常用的节点配置
+
 ```yaml
 proxies:
   - name: vless-reality-vision                  # 可以自定义节点名称
@@ -213,7 +305,7 @@ proxies:
     port: 12345                                      # 自定义端口
     type: tuic
     token: a806923b-737c-4581-8b13-56666f911866      # 自定义 Token
-    alpn: [h3]
+    alpn: [ h3 ]
     disable-sni: true
     reduce-rtt: true
     udp-relay-mode: native
@@ -225,7 +317,7 @@ proxies:
     type: tuic
     uuid: a806923b-737c-4581-8b13-56666f911866       # 自定义 UUID
     password: a806923b-737c-4581-8b13-56666f911866   # 自定义认证密码
-    alpn: [h3]
+    alpn: [ h3 ]
     disable-sni: true
     reduce-rtt: true
     udp-relay-mode: native

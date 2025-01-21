@@ -1,6 +1,10 @@
 package core
 
 type Node interface {
+	Name() string
+	SetName(string)
+	Type() NodeType
+
 	// ToShare returns the node as a shareable string
 	ToShare() string
 	// ToClash returns the node as a Clash config string

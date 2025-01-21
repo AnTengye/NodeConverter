@@ -1,0 +1,26 @@
+# 服务配置
+API:
+  # 监听地址
+  Listen: :25500
+  # Debug
+  Debug: true
+
+# 通用配置（该部分配置可被Query参数覆盖）
+Common:
+  # 需要排除的节点名称（正则）
+  Exclude: "(到期|剩余流量|时间|官网|产品|平台)"
+  # 需要包含的节点名称（正则）
+  Include: ""
+  # 需要重命名的规则
+  Rename: ""
+
+# 进阶配置
+Advanced:
+  # clash的模板文件路径
+  TemplateFilePath: "clash-tpl.yaml"
+  # 需要添加节点的代理组名称
+  ProxyGroup:
+    - 手动切换
+    - 自动选择
+    - 故障转移
+    - 负载均衡
