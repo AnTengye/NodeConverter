@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	"github.com/AnTengye/NodeConvertor/handler"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/accesslog"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"os"
 )
 
 var configFile = flag.String("f", "config.yaml", "the config file")

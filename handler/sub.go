@@ -3,10 +3,11 @@ package handler
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
+
 	"github.com/AnTengye/NodeConvertor/core"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-	"strings"
 
 	"github.com/kataras/iris/v12"
 )
@@ -59,6 +60,10 @@ func Sub(ctx iris.Context) {
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("url is invalid"))
 		return
 	}
+	switch req.Target {
+	case "clash":
+
+	}
 	ctx.WriteString(fmt.Sprintf("type=%s\n%+v", req.Target, nodes))
 }
 
@@ -78,6 +83,9 @@ func handlerSubResponse(urlResponse []byte) ([]*core.Node, error) {
 	lines := strings.Split(string(sDec), "\n")
 	result := make([]*core.Node, 0, len(lines))
 	for _, line := range lines {
+		if line == "" {
+			continue
+		}
 		node, err := handlerSingleShareUrl(line)
 		if err != nil {
 			return nil, err
@@ -100,10 +108,12 @@ func handlerSingleShareUrl(shareUrl string) (*core.Node, error) {
 		node = core.NewVLESSNode()
 	case core.NodeTypeShadowSocks:
 		node = core.NewShadowsocksNode()
+	case core.NodeTypeTrojan:
+		node = core.NewTrojanNode()
 	default:
 		return nil, fmt.Errorf("not support protocol: %s", split[0])
 	}
-	if convertErr := node.FromShare(split[1]); convertErr == nil {
+	if convertErr := node.FromShare(split[1]); convertErr != nil {
 		return nil, fmt.Errorf("share_url[%s] convert failed: %v", shareUrl, convertErr)
 	}
 	return &node, nil
@@ -142,10 +152,8 @@ func handlerClashResponse(clashResponse []byte) ([]*core.Node, error) {
 			node = core.NewVLESSNode()
 		case core.NodeTypeShadowSocks:
 			node = core.NewShadowsocksNode()
-		//case core.NodeTypeTrojan:
-		//	//node = core.NewTrojanNode()
-		//	zap.S().Warnf("%s is not supported", proxyType)
-		//	continue
+		case core.NodeTypeTrojan:
+			node = core.NewTrojanNode()
 		default:
 			zap.S().Warnf("%s is not supported", proxyType)
 			continue
