@@ -1,8 +1,10 @@
 package core
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -100,14 +102,18 @@ func (node *ShadowsocksNode) ToShare() string {
 }
 
 func (node *ShadowsocksNode) FromShare(s string) error {
-	split := strings.Split(s, "?")
-	if len(split) < 2 {
-		return fmt.Errorf("invalid Shadowsocks node format")
-	}
-	if err := node.base(split[0]); err != nil {
+	parse, err := url.Parse(s)
+	if err != nil {
 		return err
 	}
-	if err := node.extra(split[1]); err != nil {
+	decodeString, err := base64.URLEncoding.DecodeString(parse.Path)
+	if err != nil {
+		return fmt.Errorf("shadowsocks decode error: %v", err)
+	}
+	if err := node.base(string(decodeString)); err != nil {
+		return err
+	}
+	if err := node.extra(parse.Fragment); err != nil {
 		return err
 	}
 	if err := node.check(); err != nil {
