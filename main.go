@@ -1,21 +1,21 @@
 package main
 
 import (
-	"os"
-
+	"flag"
 	"github.com/AnTengye/NodeConvertor/handler"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/accesslog"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+	"os"
 )
+
+var configFile = flag.String("f", "config.yaml", "the config file")
 
 // Read the example and its comments carefully.
 func makeAccessLog() *accesslog.AccessLog {
-	// Initialize a new access log middleware.
-	ac := accesslog.File("./access.log")
-	// Remove this line to disable logging to console:
-	ac.AddOutput(os.Stdout)
+	ac := accesslog.New(zap.CombineWriteSyncers(os.Stdout))
 
-	// The default configuration:
 	ac.Delim = '|'
 	ac.TimeFormat = "2006-01-02 15:04:05"
 	ac.Async = false
@@ -38,20 +38,33 @@ func makeAccessLog() *accesslog.AccessLog {
 		Indent:    "  ",
 		HumanTime: true,
 	})
-	// ac.SetFormatter(&accesslog.CSV{})
-	// ac.SetFormatter(&accesslog.Template{Text: "{{.Code}}"})
 
 	return ac
 }
 func main() {
+	flag.Parse()
+
+	if *configFile != "" {
+		viper.SetConfigFile(*configFile) // 指定配置文件（路径 + 配置文件名）
+		viper.SetConfigType("yaml")      // 如果配置文件名中没有扩展名，则需要显式指定配置文件的格式
+	} else {
+		viper.AddConfigPath(".")             // 把当前目录加入到配置文件的搜索路径中
+		viper.AddConfigPath("$HOME/.config") // 可以多次调用 AddConfigPath 来设置多个配置文件搜索路径
+		viper.SetConfigName("config.yaml")   // 指定配置文件名（没有扩展名）
+	}
+	err := viper.ReadInConfig()
+	if err != nil {
+		viper.SetDefault("listen", ":26600")
+		_ = viper.WriteConfig()
+	}
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+	zap.ReplaceGlobals(logger)
 	ac := makeAccessLog()
-	defer ac.Close() // Close the underline file.
-
+	defer ac.Close()
+	handler.InitResty()
 	app := iris.Default()
-	// Register the middleware (UseRouter to catch http errors too).
 	app.UseRouter(ac.Handler)
-
-	app.Get("/to-share", handler.ClashToShare)
-	app.Get("/to-clash", handler.ShareToClash)
-	app.Listen(":9870")
+	app.Get("/sub", handler.Sub)
+	app.Listen(viper.GetString("listen"))
 }
