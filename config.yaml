@@ -1,1 +1,2 @@
 Listen: :25500
+TemplateFilePath: clash-tpl.yaml

@@ -3,13 +3,11 @@ package core
 import (
 	"encoding/base64"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"log"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 var _ Node = (*ShadowsocksNode)(nil)
@@ -97,23 +95,38 @@ func (node *ShadowsocksNode) ToShare() string {
 	builder.WriteString(":")
 	builder.WriteString(strconv.Itoa(node.Port))
 	builder.WriteString("#")
-	builder.WriteString(node.Name)
+	builder.WriteString(node.Name())
 	return builder.String()
 }
 
 func (node *ShadowsocksNode) FromShare(s string) error {
 	parse, err := url.Parse(s)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse ss url err: %v", err)
 	}
-	decodeString, err := base64.URLEncoding.DecodeString(parse.Path)
+	if !strings.Contains(parse.Host, ".") {
+		// base64解码parse.host之后，再重新url.Parse
+		decodeString, err := base64.URLEncoding.DecodeString(parse.Host)
+		if err != nil {
+			return fmt.Errorf("shadowsocks decode error: %v", err)
+		}
+		parse, err = url.Parse(parse.Scheme + "://" + string(decodeString) + "#" + parse.Fragment)
+		if err != nil {
+			return fmt.Errorf("reparse ss url err: %v", err)
+		}
+	}
+	setBase(parse, &node.Normal)
+	values, err := url.ParseQuery(parse.RawQuery)
 	if err != nil {
-		return fmt.Errorf("shadowsocks decode error: %v", err)
+		return fmt.Errorf("parse trojan url[%s] err: %v", parse.RawQuery, err)
 	}
-	if err := node.base(string(decodeString)); err != nil {
-		return err
+	setNetwork(values, &node.NetworkConfig)
+	setTLS(values, &node.TLSConfig)
+	if parse.User != nil {
+		node.Password, _ = parse.User.Password()
+		node.Cipher = parse.User.Username()
 	}
-	if err := node.extra(parse.Fragment); err != nil {
+	if err := node.extra(values); err != nil {
 		return err
 	}
 	if err := node.check(); err != nil {
@@ -122,67 +135,7 @@ func (node *ShadowsocksNode) FromShare(s string) error {
 	return nil
 }
 
-func (node *ShadowsocksNode) base(s string) error {
-	node.Type = "ss"
-	// Split user info and host info
-	parts := strings.Split(s, "@")
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid Shadowsocks node format")
-	}
-
-	// Parse password and server
-	secretInfo := parts[0]
-	hostInfo := parts[1]
-	// Split host info into server and port
-	hostParts := strings.Split(hostInfo, ":")
-	if len(hostParts) != 2 {
-		return fmt.Errorf("invalid host info format")
-	}
-
-	server := hostParts[0]
-	port, err := strconv.Atoi(hostParts[1])
-	if err != nil {
-		return fmt.Errorf("invalid port: %v", err)
-	}
-
-	secretInfos := strings.Split(secretInfo, ":")
-	if len(secretInfos) == 1 {
-		node.Password = secretInfos[0]
-	} else if len(secretInfos) == 2 {
-		node.Cipher = secretInfos[0]
-		node.Password = secretInfos[1]
-	} else {
-		return fmt.Errorf("invalid Shadowsocks node format")
-	}
-	node.Server = server
-	node.Port = port
-	return nil
-}
-
-func (node *ShadowsocksNode) extra(extra string) error {
-	// 获取#后面的信息
-	customInfoList := strings.Split(extra, "#")
-	if len(customInfoList) < 2 {
-		node.Name = "ss-" + time.Now().Format("15-04-05")
-	} else {
-		node.Name = customInfoList[1]
-	}
-	extraInfoList := strings.Split(customInfoList[0], "&")
-	for _, s := range extraInfoList {
-		parts := strings.Split(s, "=")
-		if len(parts) != 2 {
-			continue
-		}
-		key := parts[0]
-		value := parts[1]
-		switch key {
-		case "type":
-			node.Network = value
-
-		default:
-			continue
-		}
-	}
+func (node *ShadowsocksNode) extra(extra url.Values) error {
 	return nil
 }
 func (node *ShadowsocksNode) check() error {
@@ -202,6 +155,14 @@ func (node *ShadowsocksNode) FromClash(s []byte) error {
 		return fmt.Errorf("unmarshal Shadowsocks node error: %v", err)
 	}
 	return nil
+}
+
+func (node *ShadowsocksNode) Name() string {
+	return node.Normal.Name
+}
+
+func (node *ShadowsocksNode) Type() NodeType {
+	return node.Normal.Type
 }
 
 func NewShadowsocksNode() Node {
