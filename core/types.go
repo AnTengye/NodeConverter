@@ -64,16 +64,6 @@ type RealityTlsConfig struct {
 	ShortID   string `json:"short-id" yaml:"short-id,omitempty"`
 }
 
-// network: http
-// http-opts:
-//
-//	method: "GET"
-//	path:
-//	- '/'
-//	- '/video'
-//	headers:
-//	  Connection:
-//	  - keep-alive
 type NetworkConfig struct {
 	Network string `json:"network" yaml:"network,omitempty"`
 
@@ -83,13 +73,22 @@ type NetworkConfig struct {
 	WSOpts   *WSNetworkConfig   `json:"ws-opts" yaml:"ws-opts,omitempty"`
 }
 
+// HTTPNetworkConfig
+//
+//	method: "GET"
+//	path:
+//	- '/'
+//	- '/video'
+//	headers:
+//	  Connection:
+//	  - keep-alive
 type HTTPNetworkConfig struct {
 	Method  string              `json:"method" yaml:"method,omitempty"`
 	Path    []string            `json:"path" yaml:"path,omitempty"`
 	Headers map[string][]string `json:"headers" yaml:"headers,omitempty"`
 }
 
-// h2-opts:
+// H2NetworkConfig
 //
 //	host:
 //	- example.com
@@ -103,7 +102,7 @@ type GRPCNetworkConfig struct {
 	GRPCServiceName string `json:"grpc-service-name" yaml:"grpc-service-name,omitempty"`
 }
 
-// ws-opts:
+// WSNetworkConfig
 //
 //	path: /path
 //	headers:

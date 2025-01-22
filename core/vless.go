@@ -2,12 +2,11 @@ package core
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"log"
+	"net/url"
 	"strconv"
 	"strings"
-	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 var _ Node = (*VlessNode)(nil)
@@ -265,20 +264,23 @@ func (node *VlessNode) ToShare() string {
 		builder.WriteString("&security=none")
 	}
 	builder.WriteString("#")
-	builder.WriteString(node.Name)
+	builder.WriteString(node.Name())
 	return builder.String()
 }
 
 func (node *VlessNode) FromShare(s string) error {
-	split := strings.Split(s, "?")
-	if len(split) < 2 {
-		return fmt.Errorf("invalid vless node format")
+	node.ClientFingerprint = "chrome"
+
+	parse, err := url.Parse(s)
+	if err != nil {
+		return fmt.Errorf("parse vless url err: %v", err)
 	}
-	if err := node.base(split[0]); err != nil {
-		return err
-	}
-	if err := node.extra(split[1]); err != nil {
-		return err
+	setBase(parse, &node.Normal)
+	values := parse.Query()
+	setNetwork(values, &node.NetworkConfig)
+	setTLS(values, &node.TLSConfig)
+	if parse.User != nil {
+		node.Uuid = parse.User.Username()
 	}
 	if err := node.check(); err != nil {
 		return err
@@ -286,89 +288,9 @@ func (node *VlessNode) FromShare(s string) error {
 	return nil
 }
 
-func (node *VlessNode) base(s string) error {
-	node.Type = "vless"
-	node.ClientFingerprint = "chrome"
-	// Split user info and host info
-	parts := strings.Split(s, "@")
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid vless node format")
-	}
-
-	// Parse UUID and server
-	uuid := parts[0]
-	hostInfo := parts[1]
-	// Split host info into server and port
-	hostParts := strings.Split(hostInfo, ":")
-	if len(hostParts) != 2 {
-		return fmt.Errorf("invalid host info format")
-	}
-
-	server := hostParts[0]
-	port, err := strconv.Atoi(hostParts[1])
-	if err != nil {
-		return fmt.Errorf("invalid port: %v", err)
-	}
-	node.Uuid = uuid
-	node.Server = server
-	node.Port = port
-	return nil
-}
-
-func (node *VlessNode) extra(extra string) error {
-	// 获取#后面的信息
-	customInfoList := strings.Split(extra, "#")
-	if len(customInfoList) < 2 {
-		node.Name = "vless-" + time.Now().Format("15-04-05")
-	} else {
-		node.Name = customInfoList[1]
-	}
-	extraInfoList := strings.Split(customInfoList[0], "&")
-	for _, s := range extraInfoList {
-		parts := strings.Split(s, "=")
-		if len(parts) != 2 {
-			continue
-		}
-		key := parts[0]
-		value := parts[1]
-		switch key {
-		case "type":
-			node.Network = value
-		case "flow":
-			node.Flow = value
-		case "sni":
-			node.ServerName = value
-		case "fp":
-			node.ClientFingerprint = value
-			node.TLS = true
-		case "alpn":
-			node.ALPN = strings.Split(value, ",")
-		case "pbk":
-			if node.RealityOpts == nil {
-				node.RealityOpts = &RealityTlsConfig{}
-			}
-			node.RealityOpts.PublicKey = value
-		case "sid":
-			if node.RealityOpts == nil {
-				node.RealityOpts = &RealityTlsConfig{}
-			}
-			node.RealityOpts.ShortID = value
-		case "security":
-			if value == "reality" {
-				if node.RealityOpts == nil {
-					node.RealityOpts = &RealityTlsConfig{}
-				}
-				node.TLS = true
-			}
-		case "serviceName":
-			if node.GRPCOpts == nil {
-				node.GRPCOpts = &GRPCNetworkConfig{}
-			}
-			node.GRPCOpts.GRPCServiceName = value
-
-		default:
-			continue
-		}
+func (node *VlessNode) extra(extra url.Values) error {
+	if extra.Has("flow") {
+		node.Flow = extra.Get("flow")
 	}
 	return nil
 }
@@ -403,6 +325,14 @@ func (node *VlessNode) FromClash(s []byte) error {
 		return fmt.Errorf("unmarshal vless node error: %v", err)
 	}
 	return nil
+}
+
+func (node *VlessNode) Name() string {
+	return node.Normal.Name
+}
+
+func (node *VlessNode) Type() NodeType {
+	return node.Normal.Type
 }
 
 func NewVLESSNode() Node {

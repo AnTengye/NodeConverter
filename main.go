@@ -55,7 +55,8 @@ func main() {
 	}
 	err := viper.ReadInConfig()
 	if err != nil {
-		viper.SetDefault("listen", ":26600")
+		viper.SetDefault("Listen", ":25500")
+		viper.SetDefault("TemplateFilePath", "clash-tpl.yaml")
 		_ = viper.WriteConfig()
 	}
 	logger, _ := zap.NewDevelopment()
@@ -67,5 +68,5 @@ func main() {
 	app := iris.Default()
 	app.UseRouter(ac.Handler)
 	app.Get("/sub", handler.Sub)
-	app.Listen(viper.GetString("listen"))
+	app.Listen(viper.GetString("Listen"))
 }

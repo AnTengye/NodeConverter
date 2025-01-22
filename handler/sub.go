@@ -3,13 +3,12 @@ package handler
 import (
 	"encoding/base64"
 	"fmt"
-	"strings"
-
 	"github.com/AnTengye/NodeConvertor/core"
+	"github.com/kataras/iris/v12"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-
-	"github.com/kataras/iris/v12"
+	"strings"
 )
 
 type NodeUrlType int
@@ -35,13 +34,13 @@ func Sub(ctx iris.Context) {
 		return
 	}
 	var (
-		nodes []*core.Node
+		nodes []core.Node
 	)
 	switch checkUrlOrShare(req.Url) {
 	case subUrl:
 		response, err := restyCli.R().Get(req.Url)
 		if err != nil {
-			ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("get sub error: %v", err))
+			ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("download from sub error: %v", err))
 			return
 		}
 		nodes, err = handlerSubResponse(response.Body())
@@ -62,9 +61,30 @@ func Sub(ctx iris.Context) {
 	}
 	switch req.Target {
 	case "clash":
-
+		clash, err := core.NewClash(viper.GetString("TemplateFilePath"))
+		if err != nil {
+			ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("new clash error: %v", err))
+			return
+		}
+		clash.AddProxy(nodes...)
+		y, err := clash.ToYaml()
+		if err != nil {
+			ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("generate clash error: %v", err))
+			return
+		}
+		ctx.WriteString(y)
+		return
+	case string(core.NodeTypeShadowSocks), string(core.NodeTypeVMess), string(core.NodeTypeTrojan), string(core.NodeTypeVLESS), "auto":
+		outputList := make([]string, 0, len(nodes))
+		for _, node := range nodes {
+			outputList = append(outputList, node.ToShare())
+		}
+		ctx.WriteString(base64.StdEncoding.EncodeToString([]byte(strings.Join(outputList, "\n"))))
+		return
+	default:
+		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("target is invalid"))
+		return
 	}
-	ctx.WriteString(fmt.Sprintf("type=%s\n%+v", req.Target, nodes))
 }
 
 func checkUrlOrShare(urlOrShare string) NodeUrlType {
@@ -74,14 +94,14 @@ func checkUrlOrShare(urlOrShare string) NodeUrlType {
 	return shareUrl
 }
 
-func handlerSubResponse(urlResponse []byte) ([]*core.Node, error) {
+func handlerSubResponse(urlResponse []byte) ([]core.Node, error) {
 	sDec, err := base64.StdEncoding.DecodeString(string(urlResponse))
 	if err != nil {
 		return handlerClashResponse(urlResponse)
 	}
 	// 按行读取
 	lines := strings.Split(string(sDec), "\n")
-	result := make([]*core.Node, 0, len(lines))
+	result := make([]core.Node, 0, len(lines))
 	for _, line := range lines {
 		if line == "" {
 			continue
@@ -95,8 +115,8 @@ func handlerSubResponse(urlResponse []byte) ([]*core.Node, error) {
 	return result, nil
 }
 
-func handlerSingleShareUrl(shareUrl string) (*core.Node, error) {
-	split := strings.Split(shareUrl, "://")
+func handlerSingleShareUrl(shareUrl string) (core.Node, error) {
+	split := strings.SplitN(shareUrl, "://", 2)
 	if len(split) != 2 {
 		return nil, fmt.Errorf("share_url is invalid, it should start with xxx://, but got %s", shareUrl)
 	}
@@ -113,13 +133,13 @@ func handlerSingleShareUrl(shareUrl string) (*core.Node, error) {
 	default:
 		return nil, fmt.Errorf("not support protocol: %s", split[0])
 	}
-	if convertErr := node.FromShare(split[1]); convertErr != nil {
+	if convertErr := node.FromShare(shareUrl); convertErr != nil {
 		return nil, fmt.Errorf("share_url[%s] convert failed: %v", shareUrl, convertErr)
 	}
-	return &node, nil
+	return node, nil
 }
 
-func handlerClashResponse(clashResponse []byte) ([]*core.Node, error) {
+func handlerClashResponse(clashResponse []byte) ([]core.Node, error) {
 	var data map[string]interface{}
 	if err := yaml.Unmarshal(clashResponse, &data); err != nil {
 		return nil, err
@@ -128,7 +148,7 @@ func handlerClashResponse(clashResponse []byte) ([]*core.Node, error) {
 	if !ok {
 		return nil, fmt.Errorf("proxies field not found")
 	}
-	result := make([]*core.Node, 0, len(proxies))
+	result := make([]core.Node, 0, len(proxies))
 	for _, proxy := range proxies {
 		proxyMap, ok := proxy.(map[string]interface{})
 		if !ok {
@@ -163,7 +183,7 @@ func handlerClashResponse(clashResponse []byte) ([]*core.Node, error) {
 			zap.S().Errorf("convert failed: %v", err)
 			continue
 		}
-		result = append(result, &node)
+		result = append(result, node)
 	}
 	return result, nil
 }

@@ -2,12 +2,11 @@ package core
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"log"
+	"net/url"
 	"strconv"
 	"strings"
-	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 var _ Node = (*TrojanNode)(nil)
@@ -18,6 +17,14 @@ type TrojanNode struct {
 	NetworkConfig `yaml:",inline"`
 	Password      string          `yaml:"password,omitempty"` // trojan 服务器密码
 	SSOpts        TrojanSSOptions `yaml:"ss-opts,omitempty"`
+}
+
+func (node *TrojanNode) Name() string {
+	return node.Normal.Name
+}
+
+func (node *TrojanNode) Type() NodeType {
+	return node.Normal.Type
 }
 
 type TrojanSSOptions struct {
@@ -91,21 +98,45 @@ type TrojanSSOptions struct {
 func (node *TrojanNode) ToShare() string {
 	builder := strings.Builder{}
 	builder.WriteString("trojan://")
-
+	builder.WriteString(node.Password)
+	builder.WriteString("@")
+	builder.WriteString(node.Server)
+	builder.WriteString(":")
+	builder.WriteString(strconv.Itoa(node.Port))
+	builder.WriteString("?encryption=none")
+	if node.Network != "" {
+		builder.WriteString("&type=")
+		builder.WriteString(node.Network)
+	}
+	if node.TLSConfig.SkipCertVerify {
+		builder.WriteString("&allowInsecure=1")
+	}
+	if node.TLSConfig.TLS {
+		builder.WriteString("&tls=1")
+	}
+	if node.TLSConfig.SNI != "" {
+		builder.WriteString("&sni=")
+		builder.WriteString(node.TLSConfig.SNI)
+	}
 	builder.WriteString("#")
-	builder.WriteString(node.Name)
+	builder.WriteString(node.Name())
 	return builder.String()
 }
 
 func (node *TrojanNode) FromShare(s string) error {
-	split := strings.Split(s, "?")
-	if len(split) < 2 {
-		return fmt.Errorf("invalid trojan node format")
+	parse, err := url.Parse(s)
+	if err != nil {
+		return fmt.Errorf("parse trojan url err: %v", err)
 	}
-	if err := node.base(split[0]); err != nil {
-		return err
+	setBase(parse, &node.Normal)
+	values := parse.Query()
+	setNetwork(values, &node.NetworkConfig)
+	setTLS(values, &node.TLSConfig)
+
+	if parse.User != nil {
+		node.Password = parse.User.Username()
 	}
-	if err := node.extra(split[1]); err != nil {
+	if err := node.extra(values); err != nil {
 		return err
 	}
 	if err := node.check(); err != nil {
@@ -114,62 +145,7 @@ func (node *TrojanNode) FromShare(s string) error {
 	return nil
 }
 
-func (node *TrojanNode) base(s string) error {
-	node.Type = "trojan"
-	// Split user info and host info
-	parts := strings.Split(s, "@")
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid trojan node format")
-	}
-
-	// Parse UUID and server
-	uuid := parts[0]
-	hostInfo := parts[1]
-	// Split host info into server and port
-	hostParts := strings.Split(hostInfo, ":")
-	if len(hostParts) != 2 {
-		return fmt.Errorf("invalid host info format")
-	}
-
-	server := hostParts[0]
-	port, err := strconv.Atoi(hostParts[1])
-	if err != nil {
-		return fmt.Errorf("invalid port: %v", err)
-	}
-	node.Password = uuid
-	node.Server = server
-	node.Port = port
-	return nil
-}
-
-func (node *TrojanNode) extra(extra string) error {
-	// 获取#后面的信息
-	customInfoList := strings.Split(extra, "#")
-	if len(customInfoList) < 2 {
-		node.Name = "trojan-" + time.Now().Format("15-04-05")
-	} else {
-		node.Name = customInfoList[1]
-	}
-	extraInfoList := strings.Split(customInfoList[0], "&")
-	for _, s := range extraInfoList {
-		parts := strings.Split(s, "=")
-		if len(parts) != 2 {
-			continue
-		}
-		key := parts[0]
-		value := parts[1]
-		switch key {
-		case "sni":
-			node.SNI = value
-		case "fp":
-			node.ClientFingerprint = value
-		case "alpn":
-			node.ALPN = strings.Split(value, ",")
-
-		default:
-			continue
-		}
-	}
+func (node *TrojanNode) extra(extra url.Values) error {
 	return nil
 }
 func (node *TrojanNode) check() error {
