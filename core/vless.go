@@ -237,7 +237,7 @@ func (node *VlessNode) ToShare() string {
 		builder.WriteString("&flow=")
 		builder.WriteString(node.Flow)
 	}
-	if node.SNI != "" {
+	if node.ServerName != "" {
 		builder.WriteString("&sni=")
 		builder.WriteString(node.ServerName)
 	}
@@ -295,6 +295,7 @@ func (node *VlessNode) extra(extra url.Values) error {
 	return nil
 }
 func (node *VlessNode) check() error {
+	node.Fingerprint = ""
 	if node.RealityOpts != nil {
 		if node.ClientFingerprint == "" {
 			return fmt.Errorf("reality-opts need client-fingerprint")
