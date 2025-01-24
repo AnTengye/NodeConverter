@@ -45,11 +45,12 @@ func Sub(ctx iris.Context) {
 	for _, url := range reqUrls {
 		// 获取
 		zap.S().Debugw("fetch url", "url", url)
-		nodes, err = fetchNodes(url)
-		if err != nil {
-			ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("fetch nodes[%s] error: %v", url, err))
+		n, fetchErr := fetchNodes(url)
+		if fetchErr != nil {
+			ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("fetch nodes[%s] error: %v", url, fetchErr))
 			return
 		}
+		nodes = append(nodes, n...)
 	}
 
 	// 过滤
