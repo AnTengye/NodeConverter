@@ -5,15 +5,39 @@ import (
 	"fmt"
 	"github.com/AnTengye/NodeConvertor/core"
 	"github.com/go-resty/resty/v2"
+	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"strings"
+	"time"
 )
 
 var restyCli *resty.Client
+var cacheGET func(url string) ([]byte, error)
 
 func InitResty(debug bool) {
 	restyCli = resty.New().SetLogger(zap.S()).SetDebug(debug)
+	c := cache.New(5*time.Minute, 10*time.Minute)
+	cacheGET = func(url string) ([]byte, error) {
+		// 尝试读缓存
+		if data, found := c.Get(url); found {
+			return data.([]byte), nil
+		}
+
+		// 缓存未命中，发起请求
+		var result []byte
+		resp, err := restyCli.R().Get(url)
+		if err != nil {
+			return nil, err
+		}
+		if resp.IsError() {
+			return nil, fmt.Errorf("request error: %v", resp.Error())
+		}
+		result = resp.Body()
+		// 缓存结果（根据需求调整过期时间）
+		c.Set(url, result, 10*time.Minute) // 根据API特性设置合理过期时间
+		return result, nil
+	}
 }
 
 func checkUrlOrShare(urlOrShare string) NodeUrlType {
@@ -27,11 +51,11 @@ func fetchNodes(u string) ([]core.Node, error) {
 	var nodes []core.Node
 	switch checkUrlOrShare(u) {
 	case subUrl:
-		response, err := restyCli.R().Get(u)
+		response, err := cacheGET(u)
 		if err != nil {
 			return nil, fmt.Errorf("download from sub error: %v", err)
 		}
-		nodes, err = handlerSubResponse(response.Body())
+		nodes, err = handlerSubResponse(response)
 		if err != nil {
 			return nil, fmt.Errorf("get sub error: %v", err)
 		}
