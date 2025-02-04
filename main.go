@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/AnTengye/NodeConvertor/handler"
+	"github.com/AnTengye/NodeConvertor/lib/network"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/accesslog"
 	"github.com/spf13/viper"
@@ -73,7 +74,7 @@ func main() {
 	zap.ReplaceGlobals(logger)
 	ac := makeAccessLog()
 	defer ac.Close()
-	handler.InitResty(viper.GetBool("API.Debug"))
+	network.InitResty(viper.GetBool("API.Debug"))
 	app.UseRouter(ac.Handler)
 	app.Get("/sub", handler.Sub)
 	app.Listen(viper.GetString("API.Listen"))
