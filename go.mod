@@ -1,4 +1,4 @@
-module github.com/AnTengye/NodeConvertor
+module github.com/AnTengye/NodeConverter
 
 go 1.23.4
 

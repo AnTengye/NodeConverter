@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AnTengye/NodeConvertor/core"
-	"github.com/AnTengye/NodeConvertor/lib/network"
+	"github.com/AnTengye/NodeConverter/core"
+	"github.com/AnTengye/NodeConverter/lib/network"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
