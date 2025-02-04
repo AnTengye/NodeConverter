@@ -18,9 +18,3 @@ Common:
 Advanced:
   # clash的模板文件路径
   TemplateFilePath: "clash-tpl.yaml"
-  # 需要添加节点的代理组名称
-  ProxyGroup:
-    - 手动切换
-    - 自动选择
-    - 故障转移
-    - 负载均衡

@@ -3,11 +3,13 @@ package handler
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
+
 	"github.com/AnTengye/NodeConvertor/core"
+	"github.com/AnTengye/NodeConvertor/lib/network"
 	"github.com/kataras/iris/v12"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type NodeUrlType int
@@ -77,7 +79,7 @@ func Sub(ctx iris.Context) {
 	zap.S().Debugw("filter nodes end", zap.Int("nodes", len(nodes)))
 	// 转换
 	zap.S().Debugw("convert nodes")
-	result, err := convertNodes(nodes, req.Target)
+	result, err := convertNodes(nodes, req.Target, req.Config)
 	if err != nil {
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("convert nodes error: %v", err))
 		return
@@ -87,12 +89,25 @@ func Sub(ctx iris.Context) {
 
 }
 
-func convertNodes(nodes []core.Node, target string) (string, error) {
+func convertNodes(nodes []core.Node, target string, config string) (string, error) {
 	switch target {
-	case "clash":
-		clash, err := core.NewClash(viper.GetString("Advanced.TemplateFilePath"))
-		if err != nil {
-			return "", fmt.Errorf("new clash error: %v", err)
+	case "clash", "clashmeta":
+		clash := core.NewClash(target)
+		if config != "" {
+			configBytes, err := network.CacheGET(config)
+			if err != nil {
+				return "", fmt.Errorf("download from config error: %v", err)
+			}
+			clashACLSSR, err := core.NewClashACLSSRFromBytes(configBytes)
+			if err != nil {
+				return "", err
+			}
+			clash.SetACLSSR(clashACLSSR)
+		} else {
+			err := clash.WithTemplate(viper.GetString("Advanced.TemplateFilePath"))
+			if err != nil {
+				return "", fmt.Errorf("new clash with template error: %v", err)
+			}
 		}
 		clash.AddProxy(nodes...)
 		y, err := clash.ToYaml()

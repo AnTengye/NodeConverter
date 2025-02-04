@@ -2,11 +2,11 @@ package core
 
 import (
 	"fmt"
+	"regexp"
+
 	"github.com/AnTengye/NodeConvertor/lib/yemoji"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-	"strings"
 )
 
 const (
@@ -14,52 +14,70 @@ const (
 	ClashProxiesGroup = "proxy-groups"
 	ClashRules        = "rules"
 )
+const (
+	ClashKernelClash     = "clash"
+	ClashKernelClashMeta = "clashmeta"
+)
 
 type baseClash struct {
 	ProxyGroups []ProxyGroup `yaml:"proxy-groups"`
-	//Rules       []string               `yaml:"rules"`
+	Rules       []string     `yaml:"rules"`
 }
 type ProxyGroup struct {
 	Name string `yaml:"name"`
 	Type string `yaml:"type"`
 	// 其他字段
 	OtherFields map[string]interface{} `yaml:",inline"`
-	Proxies     []string               `yaml:"proxies"`
+	Proxies     []string               `yaml:"proxies,omitempty"`
 }
 
 type Clash struct {
+	kernel  string
 	data    map[string]any
 	Proxies []Node
 	base    *baseClash
 }
 
-func NewClash(filePath string) (*Clash, error) {
+func NewClash(kernel string) *Clash {
+	return &Clash{
+		kernel:  kernel,
+		Proxies: make([]Node, 0),
+		data:    make(map[string]any),
+		base:    &baseClash{},
+	}
+}
+
+func (c *Clash) WithTemplate(filePath string) error {
 	var data map[string]any
 	yamlData, err := yamlFromFile(filePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err = yaml.Unmarshal(yamlData, &data); err != nil {
-		return nil, err
+		return err
 	}
 	var base baseClash
 	if err = yaml.Unmarshal(yamlData, &base); err != nil {
-		return nil, err
+		return err
 	}
-	return &Clash{
-		data:    data,
-		Proxies: make([]Node, 0),
-		base:    &base,
-	}, nil
+	c.data = data
+	c.base = &base
+	return nil
 }
 
 func (c *Clash) AddProxy(n ...Node) {
 	c.Proxies = append(c.Proxies, n...)
 }
 
+func (c *Clash) SetACLSSR(acl *ClashACLSSR) {
+	c.base.Rules = acl.RuleSet
+	c.base.ProxyGroups = acl.ProxyGroups
+}
+
 func (c *Clash) ToYaml() (string, error) {
 	c.data[ClashProxies] = c.Proxies
 	c.withProxyGroup()
+	c.data[ClashRules] = c.base.Rules
 	d, err := yaml.Marshal(c.data)
 	if err != nil {
 		zap.S().Errorw("ToYaml error", "err", err)
@@ -78,9 +96,28 @@ func (c *Clash) withProxyGroup() {
 		proxies[i] = v.Name()
 	}
 	for i, v := range c.base.ProxyGroups {
-		for _, groupName := range viper.GetStringSlice("Advanced.ProxyGroup") {
-			if strings.Contains(v.Name, groupName) {
-				c.base.ProxyGroups[i].Proxies = proxies
+		if len(v.Proxies) == 0 {
+			if c.kernel == ClashKernelClash {
+				if filter, ok := v.OtherFields["filter"]; ok {
+					compile, err := regexp.Compile(filter.(string))
+					if err != nil {
+						zap.S().Errorw("regexp compile error", "err", err)
+						continue
+					}
+					matchProxies := make([]string, 0, len(proxies))
+					for _, proxy := range proxies {
+						match := compile.MatchString(proxy)
+						if match {
+							matchProxies = append(matchProxies, proxy)
+						}
+					}
+					c.base.ProxyGroups[i].Proxies = matchProxies
+				}
+				if len(c.base.ProxyGroups[i].Proxies) == 0 {
+					c.base.ProxyGroups[i].Proxies = proxies
+				}
+				delete(v.OtherFields, "filter")
+				delete(v.OtherFields, "include-all-proxies")
 			}
 		}
 	}
