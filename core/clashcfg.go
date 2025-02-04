@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/AnTengye/NodeConvertor/lib/yemoji"
+	"github.com/AnTengye/NodeConverter/lib/yemoji"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )

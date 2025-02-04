@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AnTengye/NodeConvertor/core"
-	"github.com/AnTengye/NodeConvertor/lib/network"
+	"github.com/AnTengye/NodeConverter/core"
+	"github.com/AnTengye/NodeConverter/lib/network"
 	"github.com/kataras/iris/v12"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"

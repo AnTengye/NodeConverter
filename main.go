@@ -4,8 +4,8 @@ import (
 	"flag"
 	"os"
 
-	"github.com/AnTengye/NodeConvertor/handler"
-	"github.com/AnTengye/NodeConvertor/lib/network"
+	"github.com/AnTengye/NodeConverter/handler"
+	"github.com/AnTengye/NodeConverter/lib/network"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/accesslog"
 	"github.com/spf13/viper"

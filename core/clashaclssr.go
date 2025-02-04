@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/AnTengye/NodeConvertor/lib/network"
+	"github.com/AnTengye/NodeConverter/lib/network"
 	"go.uber.org/zap"
 )
 
