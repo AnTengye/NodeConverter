@@ -112,7 +112,7 @@ func convertNodes(nodes []core.Node, target string, config string) (string, erro
 		if target == core.ClashKernelClash {
 			// clash 不支持vless 过滤vless类型
 			filterVless := make([]core.Node, 0, len(nodes))
-			for _, v := range filterVless {
+			for _, v := range nodes {
 				if v.Type() == core.NodeTypeVLESS {
 					continue
 				}
