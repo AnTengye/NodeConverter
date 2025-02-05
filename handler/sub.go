@@ -109,6 +109,17 @@ func convertNodes(nodes []core.Node, target string, config string) (string, erro
 				return "", fmt.Errorf("new clash with template error: %v", err)
 			}
 		}
+		if target == core.ClashKernelClash {
+			// clash 不支持vless 过滤vless类型
+			filterVless := make([]core.Node, 0, len(nodes))
+			for _, v := range filterVless {
+				if v.Type() == core.NodeTypeVLESS {
+					continue
+				}
+				filterVless = append(filterVless, v)
+			}
+			nodes = filterVless
+		}
 		clash.AddProxy(nodes...)
 		y, err := clash.ToYaml()
 		if err != nil {
