@@ -124,7 +124,7 @@ func handlerProxyGroup(data string) (ProxyGroup, error) {
 	pg.Name = split[0]
 	pg.Type = split[1]
 	switch pg.Type {
-	case "url-test":
+	case "url-test", "fallback", "load-balance":
 		if len(split) != 5 {
 			return pg, fmt.Errorf("url-test is invalid")
 		}
@@ -147,6 +147,10 @@ func handlerProxyGroup(data string) (ProxyGroup, error) {
 		pg.OtherFields["url"] = split[3]
 		pg.OtherFields["interval"] = interval
 		pg.OtherFields["tolerance"] = tolerance
+		if pg.Type == "load-balance" {
+			//strategy: consistent-hashing
+			pg.OtherFields["strategy"] = "consistent-hashing"
+		}
 	case "select":
 		//奈飞节点`select`(NF|奈飞|解锁|Netflix|NETFLIX|Media)
 		//节点选择`select`[]♻️ 自动选择`[]🇭🇰 香港节点`[]DIRECT
