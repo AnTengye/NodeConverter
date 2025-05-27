@@ -76,9 +76,8 @@ func Sub(ctx iris.Context) {
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("filter nodes error: %v", err))
 		return
 	}
-	zap.S().Debugw("filter nodes end", zap.Int("nodes", len(nodes)))
+	zap.S().Debugw("filter nodes end, start convert", zap.Int("nodes", len(nodes)))
 	// 转换
-	zap.S().Debugw("convert nodes")
 	result, err := convertNodes(nodes, req.Target, req.Config)
 	if err != nil {
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("convert nodes error: %v", err))
