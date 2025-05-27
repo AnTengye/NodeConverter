@@ -87,9 +87,9 @@ type NetworkConfig struct {
 //	  Connection:
 //	  - keep-alive
 type HTTPNetworkConfig struct {
-	Method  string         `json:"method" yaml:"method,omitempty"`
-	Path    []string       `json:"path" yaml:"path,omitempty"`
-	Headers map[string]any `json:"headers" yaml:"headers,omitempty"`
+	Method  string              `json:"method" yaml:"method,omitempty"`
+	Path    []string            `json:"path" yaml:"path,omitempty"`
+	Headers map[string][]string `json:"headers" yaml:"headers,omitempty"`
 }
 
 // H2NetworkConfig
@@ -116,10 +116,10 @@ type GRPCNetworkConfig struct {
 //	v2ray-http-upgrade: false
 //	v2ray-http-upgrade-fast-open: false
 type WSNetworkConfig struct {
-	Path                     string         `json:"path" yaml:"path,omitempty"`
-	Headers                  map[string]any `json:"headers" yaml:"headers,omitempty"`
-	MaxEarlyData             int            `json:"max-early-data" yaml:"max-early-data,omitempty"`
-	EarlyDataHeaderName      string         `json:"early-data-header-name" yaml:"early-data-header-name,omitempty"`
-	V2RayHTTPUpgrade         bool           `json:"v2ray-http-upgrade" yaml:"v2ray-http-upgrade,omitempty"`
-	V2RayHTTPUpgradeFastOpen bool           `json:"v2ray-http-upgrade-fast-open" yaml:"v2ray-http-upgrade-fast-open,omitempty"`
+	Path                     string              `json:"path" yaml:"path,omitempty"`
+	Headers                  map[string][]string `json:"headers" yaml:"headers,omitempty"`
+	MaxEarlyData             int                 `json:"max-early-data" yaml:"max-early-data,omitempty"`
+	EarlyDataHeaderName      string              `json:"early-data-header-name" yaml:"early-data-header-name,omitempty"`
+	V2RayHTTPUpgrade         bool                `json:"v2ray-http-upgrade" yaml:"v2ray-http-upgrade,omitempty"`
+	V2RayHTTPUpgradeFastOpen bool                `json:"v2ray-http-upgrade-fast-open" yaml:"v2ray-http-upgrade-fast-open,omitempty"`
 }
