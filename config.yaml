@@ -4,10 +4,6 @@ API:
   Listen: :25500
   # Debug
   Debug: true
-  #　重试次数
-  RetryCount: 3
-  # 超时时间（秒）
-  Timeout: 8
 
 # 通用配置（该部分配置可被Query参数覆盖）
 Common:
