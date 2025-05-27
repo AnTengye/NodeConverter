@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/patrickmn/go-cache"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -15,8 +16,11 @@ var (
 	CacheGET func(url string) ([]byte, error)
 )
 
-func InitResty(debug bool) {
-	RestyCli = resty.New().SetLogger(zap.S()).SetDebug(debug)
+func InitResty() {
+	RestyCli = resty.New().SetLogger(zap.S()).
+		SetDebug(viper.GetBool("API.Debug")).
+		SetRetryCount(viper.GetInt("API.RetryCount")).
+		SetTimeout(time.Duration(viper.GetInt("API.Timeout")) * time.Second)
 	cacheCli = cache.New(5*time.Minute, 10*time.Minute)
 	CacheGET = func(url string) ([]byte, error) {
 		// 尝试读缓存

@@ -74,7 +74,7 @@ func main() {
 	zap.ReplaceGlobals(logger)
 	ac := makeAccessLog()
 	defer ac.Close()
-	network.InitResty(viper.GetBool("API.Debug"))
+	network.InitResty()
 	app.UseRouter(ac.Handler)
 	app.Get("/sub", handler.Sub)
 	app.Listen(viper.GetString("API.Listen"))
