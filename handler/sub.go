@@ -55,7 +55,7 @@ func Sub(ctx iris.Context) {
 		nodes = append(nodes, n...)
 	}
 	if len(nodes) == 0 {
-		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("no nodes, check url"))
+		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("no nodes, check url, maybe protocol not support"))
 		return
 	}
 
@@ -113,13 +113,12 @@ func convertNodes(nodes []core.Node, target string, config string) (string, erro
 			}
 		}
 		if target == core.ClashKernelClash {
-			// clash 不支持vless 过滤vless类型
+			// clash 只支持 trojan/shadowsocks/vmess
 			filterVless := make([]core.Node, 0, len(nodes))
 			for _, v := range nodes {
-				if v.Type() == core.NodeTypeVLESS {
-					continue
+				if v.Type() == core.NodeTypeTrojan || v.Type() == core.NodeTypeShadowSocks || v.Type() == core.NodeTypeVMess {
+					filterVless = append(filterVless, v)
 				}
-				filterVless = append(filterVless, v)
 			}
 			nodes = filterVless
 		}
@@ -129,7 +128,14 @@ func convertNodes(nodes []core.Node, target string, config string) (string, erro
 			return "", fmt.Errorf("generate clash error: %v", err)
 		}
 		return y, nil
-	case string(core.NodeTypeShadowSocks), string(core.NodeTypeVMess), string(core.NodeTypeTrojan), string(core.NodeTypeVLESS), "auto":
+	case string(core.NodeTypeShadowSocks),
+		string(core.NodeTypeVMess),
+		string(core.NodeTypeTrojan),
+		string(core.NodeTypeVLESS),
+		string(core.NodeTypeTUIC),
+		string(core.NodeTypeHysteria),
+		string(core.NodeTypeHysteria2),
+		"auto":
 		outputList := make([]string, 0, len(nodes))
 		for _, node := range nodes {
 			outputList = append(outputList, node.ToShare())

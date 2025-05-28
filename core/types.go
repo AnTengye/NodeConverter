@@ -7,6 +7,9 @@ const (
 	NodeTypeVMess       NodeType = "vmess"
 	NodeTypeTrojan      NodeType = "trojan"
 	NodeTypeVLESS       NodeType = "vless"
+	NodeTypeTUIC        NodeType = "tuic"
+	NodeTypeHysteria    NodeType = "hysteria"
+	NodeTypeHysteria2   NodeType = "hysteria2"
 )
 
 // 参考文档：
