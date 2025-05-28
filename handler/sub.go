@@ -49,14 +49,10 @@ func Sub(ctx iris.Context) {
 		zap.S().Debugw("fetch url", "url", url)
 		n, fetchErr := fetchNodes(url)
 		if fetchErr != nil {
-			zap.S().Errorf("fetch url error: %v", fetchErr)
-			continue
+			ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("fetch nodes[%s] error: %v", url, fetchErr))
+			return
 		}
 		nodes = append(nodes, n...)
-	}
-	if len(nodes) == 0 {
-		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("no nodes, check url"))
-		return
 	}
 
 	// 过滤
@@ -80,9 +76,8 @@ func Sub(ctx iris.Context) {
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("filter nodes error: %v", err))
 		return
 	}
-	zap.S().Debugw("filter nodes end", zap.Int("nodes", len(nodes)))
+	zap.S().Debugw("filter nodes end, start convert", zap.Int("nodes", len(nodes)))
 	// 转换
-	zap.S().Debugw("convert nodes")
 	result, err := convertNodes(nodes, req.Target, req.Config)
 	if err != nil {
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("convert nodes error: %v", err))
