@@ -56,5 +56,10 @@ func setTLS(values url.Values, t *TLSConfig) {
 	t.TLS = security == "tls" || security == "reality"
 	t.Fingerprint = values.Get("fp")
 	t.ClientFingerprint = values.Get("fp")
-	t.SkipCertVerify = values.Get("allowInsecure") == "1"
+	if values.Has("alpn") {
+		t.ALPN = []string{values.Get("alpn")}
+	}
+	if values.Get("allowInsecure") == "1" || values.Get("insecure") == "1" {
+		t.SkipCertVerify = true
+	}
 }

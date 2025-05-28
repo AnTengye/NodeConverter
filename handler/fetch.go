@@ -46,7 +46,7 @@ func fetchNodes(u string) ([]core.Node, error) {
 func handlerSubResponse(urlResponse []byte) ([]core.Node, error) {
 	sDec, err := base64.StdEncoding.DecodeString(string(urlResponse))
 	if err != nil {
-		zap.S().Infow("decode base64 error, change to clash decode", "error", err)
+		zap.S().Infow("decode base64 error, change to clash decode", zap.Error(err))
 		return handlerClashResponse(urlResponse)
 	}
 	// 按行读取
@@ -58,7 +58,8 @@ func handlerSubResponse(urlResponse []byte) ([]core.Node, error) {
 		}
 		node, err := handlerSingleShareUrl(line)
 		if err != nil {
-			return nil, err
+			zap.S().Errorw("share_url convert failed", "share_url", line, zap.Error(err))
+			continue
 		}
 		result = append(result, node)
 	}
@@ -80,6 +81,10 @@ func handlerSingleShareUrl(shareUrl string) (core.Node, error) {
 		node = core.NewShadowsocksNode()
 	case core.NodeTypeTrojan:
 		node = core.NewTrojanNode()
+	case core.NodeTypeTUIC:
+		node = core.NewTUICNode()
+	case core.NodeTypeHysteria, core.NodeTypeHysteria2:
+		node = core.NewHYSTERIANode()
 	default:
 		return nil, fmt.Errorf("not support protocol: %s", split[0])
 	}
@@ -124,6 +129,10 @@ func handlerClashResponse(clashResponse []byte) ([]core.Node, error) {
 			node = core.NewShadowsocksNode()
 		case core.NodeTypeTrojan:
 			node = core.NewTrojanNode()
+		case core.NodeTypeTUIC:
+			node = core.NewTUICNode()
+		case core.NodeTypeHysteria, core.NodeTypeHysteria2:
+			node = core.NewHYSTERIANode()
 		default:
 			zap.S().Warnf("%s is not supported", proxyType)
 			continue

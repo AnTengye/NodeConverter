@@ -135,6 +135,15 @@ https://p4gefau1t.github.io/trojan-go/developer/url/
 
 https://github.com/shadowsocks/shadowsocks-org/wiki/SIP002-URI-Scheme
 
+### Tuic
+
+https://github.com/tuic-protocol/tuic
+参考VLESS的设定
+
+### hysteria
+
+https://v2.hysteria.network/zh/docs/developers/URI-Scheme/
+
 ## clash配置文档
 
 https://wiki.metacubex.one/
