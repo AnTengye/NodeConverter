@@ -83,7 +83,7 @@ func TestVlessNode_FromShare(t *testing.T) {
 			name:   "test-vless-succes",
 			fields: fields{},
 			args: args{
-				s: "vless://53fa8faf-ba4b-4322-9c69-a3e5b1555049@45.80.111.177:80?security=none&type=ws&path=%2FTelegram%3A%40vpnAndroid2%2F%3Fed%3D2560&host=reedfree8mahsang2.redorg.ir&sni=reedfree8mahsang2.redorg.ir#%F0%9F%87%BA%F0%9F%87%B8%E7%BE%8E%E5%9B%BD9-%20%E2%AC%87%EF%B8%8F%201.1MB%2Fs",
+				s: "vless://55520747-311e-4015-83ce-be46e2060ce3@220.118.248.123:30012?encryption=none&security=tls&sni=ca.bgm2024.dpdns.org&allowInsecure=1&type=ws&host=ca.bgm2024.dpdns.org&path=%2F%3Fed%3D2560#%F0%9F%87%BA%F0%9F%87%B8%E7%BE%8E%E5%9B%BD5-%20%E2%AC%87%EF%B8%8F%203.4MB%2Fs",
 			},
 			wantErr: false,
 		},
