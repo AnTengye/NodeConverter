@@ -25,10 +25,17 @@ func TestShadowsocksNode_FromShare(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "ss-chiper",
+			args: args{
+				s: "ss://YWVzLTI1Ni1jZmI6cXdlclJFV1FAQA==@221.150.109.89:11389#%F0%9F%8C%80%E5%85%B6%E4%BB%961-%E6%9C%AA%E8%AF%86%E5%88%AB-%20%E2%AC%87%EF%B8%8F%207.5MB%2Fs",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			node := &ShadowsocksNode{}
+			node := NewShadowsocksNode()
 			if err := node.FromShare(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("FromShare() error = %v, wantErr %v", err, tt.wantErr)
 			}

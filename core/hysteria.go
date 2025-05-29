@@ -307,6 +307,8 @@ func (node *HysteriaNode) ToShare() string {
 // hysteria://1.1.1.1:14241?alpn=h3&auth=dongtaiwang.com&auth_str=dongtaiwang.com&delay=1004&downmbps=100&protocol=udp&insecure=1&peer=apple.com&udp=true&upmbps=100#%F0%9F%87%AB%F0%9F%87%B7%E6%B3%95%E5%9B%BD1-%20%E2%AC%87%EF%B8%8F%209.4MB%2Fs
 func (node *HysteriaNode) FromShare(s string) error {
 	node.ClientFingerprint = "chrome"
+	node.Down = 1000
+	node.Up = 1000
 
 	parse, err := url.Parse(s)
 	if err != nil {
