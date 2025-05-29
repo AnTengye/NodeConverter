@@ -22,8 +22,8 @@ type VlessNode struct {
 	Flow           string `json:"flow" yaml:"flow,omitempty"` // VLESS 子协议，可用值为 xtls-rprx-vision
 	PacketEncoding string `json:"packet-encoding" yaml:"packet-encoding,omitempty"`
 	// vmess
-	AlterID int    `json:"alterId" yaml:"alterId"`         // VMESS 必须，如果不为 0，则启用旧协议
-	Cipher  string `json:"cipher" yaml:"cipher,omitempty"` // VMESS 必须，加密方法，支持 auto/none/zero/aes-128-gcm/chacha20-poly1305
+	AlterID int    `json:"alterId" yaml:"alterId,omitempty"` // VMESS 必须，如果不为 0，则启用旧协议
+	Cipher  string `json:"cipher" yaml:"cipher,omitempty"`   // VMESS 必须，加密方法，支持 auto/none/zero/aes-128-gcm/chacha20-poly1305
 }
 
 // 4.1 基本信息段

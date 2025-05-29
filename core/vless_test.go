@@ -79,6 +79,14 @@ func TestVlessNode_FromShare(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:   "test-vless-succes",
+			fields: fields{},
+			args: args{
+				s: "vless://53fa8faf-ba4b-4322-9c69-a3e5b1555049@45.80.111.177:80?security=none&type=ws&path=%2FTelegram%3A%40vpnAndroid2%2F%3Fed%3D2560&host=reedfree8mahsang2.redorg.ir&sni=reedfree8mahsang2.redorg.ir#%F0%9F%87%BA%F0%9F%87%B8%E7%BE%8E%E5%9B%BD9-%20%E2%AC%87%EF%B8%8F%201.1MB%2Fs",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
