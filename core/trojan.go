@@ -134,6 +134,7 @@ func (node *TrojanNode) FromShare(s string) error {
 }
 
 func (node *TrojanNode) check() error {
+	node.Fingerprint = ""
 	return nil
 }
 
