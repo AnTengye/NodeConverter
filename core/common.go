@@ -24,6 +24,9 @@ func setBase(u *url.URL, normal *Normal) {
 
 func setNetwork(values url.Values, n *NetworkConfig) {
 	n.Network = values.Get("type")
+	if n.Network == "" {
+		n.Network = values.Get("net")
+	}
 	switch n.Network {
 	case "ws":
 		n.WSOpts = &WSNetworkConfig{}

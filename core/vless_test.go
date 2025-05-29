@@ -52,3 +52,41 @@ ws-opts:
 		})
 	}
 }
+
+func TestVlessNode_FromShare(t *testing.T) {
+	type fields struct {
+		Normal         Normal
+		TLSConfig      TLSConfig
+		NetworkConfig  NetworkConfig
+		Uuid           string
+		Flow           string
+		PacketEncoding string
+	}
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "test1",
+			fields: fields{},
+			args: args{
+				s: "vmess://eyJ2IjoiMiIsInBzIjoi8J+HuvCfh7jnvo7lm70xNy0g4qyH77iPIDEuMk1CL3MiLCJhZGQiOiIxNTAuMjMwLjM1LjExMyIsInBvcnQiOjgwODAsImlkIjoiOTQ2MjU4NGItOWVkNi00NjQ5LTk5MTUtMmFmZDhlNDM2ZDc3IiwidHlwZSI6IiIsImFpZCI6MCwibmV0Ijoid3MiLCJ0bHMiOiIiLCJwYXRoIjoiLzk0NjI1ODRiLTllZDYtNDY0OS05OTE1LTJhZmQ4ZTQzNmQ3Ny12bSIsImhvc3QiOiJ3d3cuYmluZy5jb20ifQ==",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := NewVLESSNode()
+			if err := node.FromShare(tt.args.s); (err != nil) != tt.wantErr {
+				t.Errorf("FromShare() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			t.Log(node.ToClash())
+		})
+	}
+}

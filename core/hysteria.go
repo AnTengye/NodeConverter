@@ -244,42 +244,63 @@ type HysteriaNode struct {
 // 必须使用 encodeURIComponent 转义。此项可能为空字符串。
 // 通用格式(HYSTERIA+reality+uTLS+Vision)
 func (node *HysteriaNode) ToShare() string {
-	builder := strings.Builder{}
-	builder.WriteString(string(node.Type()))
-	builder.WriteString("://")
-	builder.WriteString(node.Server)
-	builder.WriteString(":")
-	builder.WriteString(strconv.Itoa(node.Port))
-	builder.WriteString("?encryption=none")
-	if node.ServerName != "" {
-		builder.WriteString("&sni=")
-		builder.WriteString(node.ServerName)
-	}
-	if node.ClientFingerprint != "" {
-		builder.WriteString("&fp=")
-		builder.WriteString(node.ClientFingerprint)
-	}
-	if node.ALPN != nil {
-		builder.WriteString("&alpn=")
-		builder.WriteString(strings.Join(node.ALPN, ","))
-	}
-	node.customToShare(&builder)
-	if node.TLS {
-		if node.RealityOpts != nil {
-			builder.WriteString("&security=reality")
-			builder.WriteString("&pbk=")
-			builder.WriteString(node.RealityOpts.PublicKey)
-			builder.WriteString("&sid=")
-			builder.WriteString(node.RealityOpts.ShortID)
-		} else {
-			builder.WriteString("&security=tls")
-		}
-	} else {
-		builder.WriteString("&security=none")
-	}
-	builder.WriteString("#")
-	builder.WriteString(node.Name())
-	return builder.String()
+	return node.buildBaseShareURI(
+		string(node.Type()),
+		func(builder *strings.Builder) {
+		},
+		func(builder *strings.Builder) {
+			builder.WriteString("?encryption=none")
+			if node.ServerName != "" {
+				builder.WriteString("&sni=")
+				builder.WriteString(node.ServerName)
+			}
+			if node.ClientFingerprint != "" {
+				builder.WriteString("&fp=")
+				builder.WriteString(node.ClientFingerprint)
+			}
+			if node.ALPN != nil {
+				builder.WriteString("&alpn=")
+				builder.WriteString(strings.Join(node.ALPN, ","))
+			}
+			if node.AuthStr != "" {
+				builder.WriteString("&auth_str=")
+				builder.WriteString(node.AuthStr)
+			}
+			if node.Down != 0 {
+				builder.WriteString("&downmbps=")
+				builder.WriteString(strconv.Itoa(node.Down))
+			}
+			if node.Up != 0 {
+				builder.WriteString("&upmbps=")
+				builder.WriteString(strconv.Itoa(node.Up))
+			}
+			if node.Protocol != "" {
+				builder.WriteString("&protocol=")
+				builder.WriteString(node.Protocol)
+			}
+			if node.Obfs != "" {
+				builder.WriteString("&obfs=")
+				builder.WriteString(node.Obfs)
+			}
+			if node.ObfsPassword != "" {
+				builder.WriteString("&obfs_password=")
+				builder.WriteString(node.ObfsPassword)
+			}
+			if node.TLS {
+				if node.RealityOpts != nil {
+					builder.WriteString("&security=reality")
+					builder.WriteString("&pbk=")
+					builder.WriteString(node.RealityOpts.PublicKey)
+					builder.WriteString("&sid=")
+					builder.WriteString(node.RealityOpts.ShortID)
+				} else {
+					builder.WriteString("&security=tls")
+				}
+			} else {
+				builder.WriteString("&security=none")
+			}
+		},
+	)
 }
 
 // FromShare
@@ -294,6 +315,9 @@ func (node *HysteriaNode) FromShare(s string) error {
 	setBase(parse, &node.Normal)
 	values := parse.Query()
 	setTLS(values, &node.TLSConfig)
+	if parse.User != nil {
+		node.Password = parse.User.Username()
+	}
 	node.convertValues(values)
 	if err := node.check(); err != nil {
 		return err
@@ -312,26 +336,11 @@ func (node *HysteriaNode) convertValues(values url.Values) {
 			node.Up, _ = strconv.Atoi(v[0])
 		case "protocol":
 			node.Protocol = v[0]
+		case "obfs":
+			node.Obfs = v[0]
+		case "obfs-password":
+			node.ObfsPassword = v[0]
 		}
-	}
-}
-
-func (node *HysteriaNode) customToShare(builder *strings.Builder) {
-	if node.AuthStr != "" {
-		builder.WriteString("&auth_str=")
-		builder.WriteString(node.AuthStr)
-	}
-	if node.Down != 0 {
-		builder.WriteString("&downmbps=")
-		builder.WriteString(strconv.Itoa(node.Down))
-	}
-	if node.Up != 0 {
-		builder.WriteString("&upmbps=")
-		builder.WriteString(strconv.Itoa(node.Up))
-	}
-	if node.Protocol != "" {
-		builder.WriteString("&protocol=")
-		builder.WriteString(node.Protocol)
 	}
 }
 

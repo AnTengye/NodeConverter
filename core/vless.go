@@ -1,12 +1,15 @@
 package core
 
 import (
+	"encoding/base64"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"log"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/bytedance/sonic"
+	"gopkg.in/yaml.v3"
 )
 
 var _ Node = (*VlessNode)(nil)
@@ -18,6 +21,9 @@ type VlessNode struct {
 	Uuid           string `json:"uuid" yaml:"uuid,omitempty"` // 必须，VLESS 用户 ID
 	Flow           string `json:"flow" yaml:"flow,omitempty"` // VLESS 子协议，可用值为 xtls-rprx-vision
 	PacketEncoding string `json:"packet-encoding" yaml:"packet-encoding,omitempty"`
+	// vmess
+	AlterID int    `json:"alterId" yaml:"alterId"`         // VMESS 必须，如果不为 0，则启用旧协议
+	Cipher  string `json:"cipher" yaml:"cipher,omitempty"` // VMESS 必须，加密方法，支持 auto/none/zero/aes-128-gcm/chacha20-poly1305
 }
 
 // 4.1 基本信息段
@@ -221,51 +227,50 @@ type VlessNode struct {
 // 必须使用 encodeURIComponent 转义。此项可能为空字符串。
 // 通用格式(VLESS+reality+uTLS+Vision)
 func (node *VlessNode) ToShare() string {
-	builder := strings.Builder{}
-	builder.WriteString("vless://")
-	builder.WriteString(node.Uuid)
-	builder.WriteString("@")
-	builder.WriteString(node.Server)
-	builder.WriteString(":")
-	builder.WriteString(strconv.Itoa(node.Port))
-	builder.WriteString("?encryption=none")
-	if node.Network != "" {
-		builder.WriteString("&type=")
-		builder.WriteString(node.Network)
-	}
-	if node.Flow != "" {
-		builder.WriteString("&flow=")
-		builder.WriteString(node.Flow)
-	}
-	if node.ServerName != "" {
-		builder.WriteString("&sni=")
-		builder.WriteString(node.ServerName)
-	}
-	if node.ClientFingerprint != "" {
-		builder.WriteString("&fp=")
-		builder.WriteString(node.ClientFingerprint)
-	}
-	if node.ALPN != nil {
-		builder.WriteString("&alpn=")
-		builder.WriteString(strings.Join(node.ALPN, ","))
-	}
+	return node.buildBaseShareURI(
+		string(node.Type()),
+		func(builder *strings.Builder) {
+			builder.WriteString(node.Uuid)
+			builder.WriteString("@")
+		},
+		func(builder *strings.Builder) {
+			builder.WriteString("?encryption=none")
+			if node.Network != "" {
+				builder.WriteString("&type=")
+				builder.WriteString(node.Network)
+			}
+			if node.Flow != "" {
+				builder.WriteString("&flow=")
+				builder.WriteString(node.Flow)
+			}
+			if node.ServerName != "" {
+				builder.WriteString("&sni=")
+				builder.WriteString(node.ServerName)
+			}
+			if node.ClientFingerprint != "" {
+				builder.WriteString("&fp=")
+				builder.WriteString(node.ClientFingerprint)
+			}
+			if node.ALPN != nil {
+				builder.WriteString("&alpn=")
+				builder.WriteString(strings.Join(node.ALPN, ","))
+			}
 
-	if node.TLS {
-		if node.RealityOpts != nil {
-			builder.WriteString("&security=reality")
-			builder.WriteString("&pbk=")
-			builder.WriteString(node.RealityOpts.PublicKey)
-			builder.WriteString("&sid=")
-			builder.WriteString(node.RealityOpts.ShortID)
-		} else {
-			builder.WriteString("&security=tls")
-		}
-	} else {
-		builder.WriteString("&security=none")
-	}
-	builder.WriteString("#")
-	builder.WriteString(node.Name())
-	return builder.String()
+			if node.TLS {
+				if node.RealityOpts != nil {
+					builder.WriteString("&security=reality")
+					builder.WriteString("&pbk=")
+					builder.WriteString(node.RealityOpts.PublicKey)
+					builder.WriteString("&sid=")
+					builder.WriteString(node.RealityOpts.ShortID)
+				} else {
+					builder.WriteString("&security=tls")
+				}
+			} else {
+				builder.WriteString("&security=none")
+			}
+		},
+	)
 }
 
 func (node *VlessNode) FromShare(s string) error {
@@ -275,25 +280,44 @@ func (node *VlessNode) FromShare(s string) error {
 	if err != nil {
 		return fmt.Errorf("parse vless url err: %v", err)
 	}
+	values := make(url.Values)
+	if sDec, decodeErr := base64.StdEncoding.DecodeString(parse.Host); decodeErr == nil {
+		params := make(map[string]any)
+		unmarshalErr := sonic.Unmarshal(sDec, &params)
+		if unmarshalErr != nil {
+			return err
+		}
+		parse.Host = fmt.Sprintf("%v:%v", params["add"], params["port"])
+		parse.Fragment = params["ps"].(string)
+		for k, v := range params {
+			values.Set(k, fmt.Sprintf("%v", v))
+		}
+	} else {
+		values = parse.Query()
+	}
 	setBase(parse, &node.Normal)
-	values := parse.Query()
 	setNetwork(values, &node.NetworkConfig)
 	setTLS(values, &node.TLSConfig)
 	if parse.User != nil {
 		node.Uuid = parse.User.Username()
 	}
+	node.convertValues(values)
 	if err := node.check(); err != nil {
 		return err
 	}
 	return nil
 }
-
-func (node *VlessNode) extra(extra url.Values) error {
-	if extra.Has("flow") {
-		node.Flow = extra.Get("flow")
+func (node *VlessNode) convertValues(values url.Values) {
+	for k, v := range values {
+		switch k {
+		case "id":
+			node.Uuid = v[0]
+		case "aid":
+			node.AlterID, _ = strconv.Atoi(v[0])
+		}
 	}
-	return nil
 }
+
 func (node *VlessNode) check() error {
 	node.Fingerprint = ""
 	if node.RealityOpts != nil {
@@ -309,6 +333,14 @@ func (node *VlessNode) check() error {
 	}
 	if node.TLS && node.Network == "tcp" {
 		node.Flow = "xtls-rprx-vision"
+	}
+	if node.Uuid == "" {
+		return fmt.Errorf("need uuid")
+	}
+	if node.Type() == NodeTypeVMess {
+		if node.Cipher == "" {
+			return fmt.Errorf("need cipher")
+		}
 	}
 	return nil
 }
@@ -337,5 +369,8 @@ func (node *VlessNode) Type() NodeType {
 }
 
 func NewVLESSNode() Node {
-	return &VlessNode{}
+	return &VlessNode{
+		AlterID: 0,
+		Cipher:  "auto",
+	}
 }

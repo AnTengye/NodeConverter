@@ -26,10 +26,18 @@ func TestHysteriaNode_FromShare(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "testurl",
+			name:   "test1",
 			fields: fields{},
 			args: args{
 				s: "hysteria://51.159.226.1:14241?alpn=h3&auth=dongtaiwang.com&auth_str=dongtaiwang.com&delay=1004&downmbps=100&protocol=udp&insecure=1&peer=apple.com&udp=true&upmbps=100#%F0%9F%87%AB%F0%9F%87%B7%E6%B3%95%E5%9B%BD1-%20%E2%AC%87%EF%B8%8F%209.4MB%2Fs",
+			},
+			wantErr: false,
+		},
+		{
+			name:   "test2",
+			fields: fields{},
+			args: args{
+				s: "hysteria2://dongtaiwang.com@51.159.111.32:31180?insecure=1&sni=apple.com#%F0%9F%87%AB%F0%9F%87%B7%E6%B3%95%E5%9B%BD3-%20%E2%AC%87%EF%B8%8F%202.1MB%2Fs",
 			},
 			wantErr: false,
 		},
