@@ -49,6 +49,22 @@ func TestHysteriaNode_FromShare(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:   "test-obs-password",
+			fields: fields{},
+			args: args{
+				s: "hysteria2://dongtaiwang.com@108.181.5.130:57773?insecure=1&sni=apple.com#%F0%9F%87%BA%F0%9F%87%B8%E7%BE%8E%E5%9B%BD1-%20%E2%AC%87%EF%B8%8F%201.4MB%2Fs",
+			},
+			wantErr: false,
+		},
+		{
+			name:   "test-updown",
+			fields: fields{},
+			args: args{
+				s: "hysteria://108.181.24.77:11512?alpn=h3&auth_str=dongtaiwang.com&downmbps=1000 Mbps&insecure=1&peer=apple.com&udp=true&upmbps=1000 Mbps#%F0%9F%87%BA%F0%9F%87%B8%E7%BE%8E%E5%9B%BD3-%20%E2%AC%87%EF%B8%8F%203.8MB%2Fs",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
