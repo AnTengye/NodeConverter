@@ -2,11 +2,11 @@ package core
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"log"
 	"net/url"
-	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 var _ Node = (*TrojanNode)(nil)
@@ -88,31 +88,30 @@ type TrojanSSOptions struct {
 //
 // 必须使用 encodeURIComponent 编码。
 func (node *TrojanNode) ToShare() string {
-	builder := strings.Builder{}
-	builder.WriteString("trojan://")
-	builder.WriteString(node.Password)
-	builder.WriteString("@")
-	builder.WriteString(node.Server)
-	builder.WriteString(":")
-	builder.WriteString(strconv.Itoa(node.Port))
-	builder.WriteString("?encryption=none")
-	if node.Network != "" {
-		builder.WriteString("&type=")
-		builder.WriteString(node.Network)
-	}
-	if node.TLSConfig.SkipCertVerify {
-		builder.WriteString("&allowInsecure=1")
-	}
-	if node.TLSConfig.TLS {
-		builder.WriteString("&tls=1")
-	}
-	if node.TLSConfig.SNI != "" {
-		builder.WriteString("&sni=")
-		builder.WriteString(node.TLSConfig.SNI)
-	}
-	builder.WriteString("#")
-	builder.WriteString(node.Name())
-	return builder.String()
+	return node.buildBaseShareURI(
+		string(node.Type()),
+		func(builder *strings.Builder) {
+			builder.WriteString(node.Password)
+			builder.WriteString("@")
+		},
+		func(builder *strings.Builder) {
+			builder.WriteString("?encryption=none")
+			if node.Network != "" {
+				builder.WriteString("&type=")
+				builder.WriteString(node.Network)
+			}
+			if node.TLSConfig.SkipCertVerify {
+				builder.WriteString("&allowInsecure=1")
+			}
+			if node.TLSConfig.TLS {
+				builder.WriteString("&tls=1")
+			}
+			if node.TLSConfig.SNI != "" {
+				builder.WriteString("&sni=")
+				builder.WriteString(node.TLSConfig.SNI)
+			}
+		},
+	)
 }
 
 func (node *TrojanNode) FromShare(s string) error {
@@ -128,18 +127,12 @@ func (node *TrojanNode) FromShare(s string) error {
 	if parse.User != nil {
 		node.Password = parse.User.Username()
 	}
-	if err := node.extra(values); err != nil {
-		return err
-	}
 	if err := node.check(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (node *TrojanNode) extra(extra url.Values) error {
-	return nil
-}
 func (node *TrojanNode) check() error {
 	return nil
 }

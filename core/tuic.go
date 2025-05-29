@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -235,44 +234,50 @@ type TuicCustomParams struct {
 // 必须使用 encodeURIComponent 转义。此项可能为空字符串。
 // 通用格式(TUIC+reality+uTLS+Vision)
 func (node *TuicNode) ToShare() string {
-	builder := strings.Builder{}
-	builder.WriteString("tuic://")
-	builder.WriteString(node.Uuid)
-	builder.WriteString("@")
-	builder.WriteString(node.Server)
-	builder.WriteString(":")
-	builder.WriteString(strconv.Itoa(node.Port))
-	builder.WriteString("?encryption=none")
-	if node.ServerName != "" {
-		builder.WriteString("&sni=")
-		builder.WriteString(node.ServerName)
-	}
-	if node.ClientFingerprint != "" {
-		builder.WriteString("&fp=")
-		builder.WriteString(node.ClientFingerprint)
-	}
-	if node.ALPN != nil {
-		builder.WriteString("&alpn=")
-		builder.WriteString(strings.Join(node.ALPN, ","))
-	}
-	node.customToShare(&builder)
+	return node.buildBaseShareURI(
+		string(node.Type()),
+		func(builder *strings.Builder) {
+			builder.WriteString(node.Uuid)
+			builder.WriteString("@")
+		},
+		func(builder *strings.Builder) {
+			builder.WriteString("?encryption=none")
+			if node.ServerName != "" {
+				builder.WriteString("&sni=")
+				builder.WriteString(node.ServerName)
+			}
+			if node.ClientFingerprint != "" {
+				builder.WriteString("&fp=")
+				builder.WriteString(node.ClientFingerprint)
+			}
+			if node.ALPN != nil {
+				builder.WriteString("&alpn=")
+				builder.WriteString(strings.Join(node.ALPN, ","))
+			}
+			if node.UdpRelayMode != "" {
+				builder.WriteString("&udp_relay_mode=")
+				builder.WriteString(node.UdpRelayMode)
+			}
+			if node.Version != "" {
+				builder.WriteString("&version=")
+				builder.WriteString(node.Version)
+			}
 
-	if node.TLS {
-		if node.RealityOpts != nil {
-			builder.WriteString("&security=reality")
-			builder.WriteString("&pbk=")
-			builder.WriteString(node.RealityOpts.PublicKey)
-			builder.WriteString("&sid=")
-			builder.WriteString(node.RealityOpts.ShortID)
-		} else {
-			builder.WriteString("&security=tls")
-		}
-	} else {
-		builder.WriteString("&security=none")
-	}
-	builder.WriteString("#")
-	builder.WriteString(node.Name())
-	return builder.String()
+			if node.TLS {
+				if node.RealityOpts != nil {
+					builder.WriteString("&security=reality")
+					builder.WriteString("&pbk=")
+					builder.WriteString(node.RealityOpts.PublicKey)
+					builder.WriteString("&sid=")
+					builder.WriteString(node.RealityOpts.ShortID)
+				} else {
+					builder.WriteString("&security=tls")
+				}
+			} else {
+				builder.WriteString("&security=none")
+			}
+		},
+	)
 }
 
 // FromShare
@@ -314,17 +319,6 @@ func (node *TuicNode) convertValues(values url.Values) {
 			}
 
 		}
-	}
-}
-
-func (node *TuicNode) customToShare(builder *strings.Builder) {
-	if node.UdpRelayMode != "" {
-		builder.WriteString("&udp_relay_mode=")
-		builder.WriteString(node.UdpRelayMode)
-	}
-	if node.Version != "" {
-		builder.WriteString("&version=")
-		builder.WriteString(node.Version)
 	}
 }
 

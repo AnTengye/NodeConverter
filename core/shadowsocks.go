@@ -3,11 +3,11 @@ package core
 import (
 	"encoding/base64"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"log"
 	"net/url"
-	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 var _ Node = (*ShadowsocksNode)(nil)
@@ -83,20 +83,19 @@ type ShadowsocksNode struct {
 // ss://2022-blake3-aes-256-gcm:YctPZ6U7xPPcU%2Bgp3u%2B0tx%2FtRizJN9K8y%2BuKlW2qjlI%3D@192.168.100.1:8888#Example3
 // ss://2022-blake3-aes-256-gcm:YctPZ6U7xPPcU%2Bgp3u%2B0tx%2FtRizJN9K8y%2BuKlW2qjlI%3D@192.168.100.1:8888/?plugin=v2ray-plugin%3Bserver#Example3
 func (node *ShadowsocksNode) ToShare() string {
-	builder := strings.Builder{}
-	builder.WriteString("ss://")
-	if node.Cipher != "" {
-		builder.WriteString(node.Cipher)
-		builder.WriteString(":")
-	}
-	builder.WriteString(node.Password)
-	builder.WriteString("@")
-	builder.WriteString(node.Server)
-	builder.WriteString(":")
-	builder.WriteString(strconv.Itoa(node.Port))
-	builder.WriteString("#")
-	builder.WriteString(node.Name())
-	return builder.String()
+	return node.buildBaseShareURI(
+		string(node.Type()),
+		func(builder *strings.Builder) {
+			if node.Cipher != "" {
+				builder.WriteString(node.Cipher)
+				builder.WriteString(":")
+			}
+			builder.WriteString(node.Password)
+			builder.WriteString("@")
+		},
+		func(builder *strings.Builder) {
+		},
+	)
 }
 
 func (node *ShadowsocksNode) FromShare(s string) error {

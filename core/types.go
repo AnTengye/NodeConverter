@@ -1,5 +1,10 @@
 package core
 
+import (
+	"strconv"
+	"strings"
+)
+
 type NodeType string
 
 const (
@@ -37,6 +42,27 @@ type Normal struct {
 
 func (n *Normal) SetName(name string) {
 	n.Name = name
+}
+
+func (n *Normal) buildBaseShareURI(scheme string, addUserInfo func(*strings.Builder), customQueryBuilder func(*strings.Builder)) string {
+	var builder strings.Builder
+	builder.WriteString(scheme)
+	builder.WriteString("://")
+	if addUserInfo != nil {
+		addUserInfo(&builder)
+	}
+	builder.WriteString(n.Server)
+	builder.WriteString(":")
+	builder.WriteString(strconv.Itoa(n.Port))
+
+	// ... 其他通用参数 ...
+	if customQueryBuilder != nil {
+		customQueryBuilder(&builder)
+	}
+
+	builder.WriteString("#")
+	builder.WriteString(n.Name)
+	return builder.String()
 }
 
 type Smux struct {
