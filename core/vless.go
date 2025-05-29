@@ -339,7 +339,7 @@ func (node *VlessNode) check() error {
 	}
 	if node.Type() == NodeTypeVMess {
 		if node.Cipher == "" {
-			return fmt.Errorf("need cipher")
+			node.Cipher = "auto"
 		}
 	}
 	return nil
@@ -369,8 +369,5 @@ func (node *VlessNode) Type() NodeType {
 }
 
 func NewVLESSNode() Node {
-	return &VlessNode{
-		AlterID: 0,
-		Cipher:  "auto",
-	}
+	return &VlessNode{}
 }

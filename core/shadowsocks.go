@@ -122,11 +122,16 @@ func (node *ShadowsocksNode) FromShare(s string) error {
 	setNetwork(values, &node.NetworkConfig)
 	setTLS(values, &node.TLSConfig)
 	if parse.User != nil {
-		node.Password, _ = parse.User.Password()
-		node.Cipher = parse.User.Username()
-	}
-	if err := node.extra(values); err != nil {
-		return err
+		if decodeString, decodeErr := base64.URLEncoding.DecodeString(parse.User.String()); decodeErr == nil {
+			split := strings.Split(string(decodeString), ":")
+			if len(split) == 2 {
+				node.Cipher = split[0]
+				node.Password = split[1]
+			}
+		} else {
+			node.Password, _ = parse.User.Password()
+			node.Cipher = parse.User.Username()
+		}
 	}
 	if err := node.check(); err != nil {
 		return err
@@ -134,10 +139,10 @@ func (node *ShadowsocksNode) FromShare(s string) error {
 	return nil
 }
 
-func (node *ShadowsocksNode) extra(extra url.Values) error {
-	return nil
-}
 func (node *ShadowsocksNode) check() error {
+	if node.Password == "" {
+		return fmt.Errorf("shadowsocks password is empty")
+	}
 	return nil
 }
 
