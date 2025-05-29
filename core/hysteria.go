@@ -333,9 +333,9 @@ func (node *HysteriaNode) convertValues(values url.Values) {
 		case "auth_str":
 			node.AuthStr = v[0]
 		case "downmbps":
-			node.Down, _ = strconv.Atoi(v[0])
+			node.Down = mbpsConvert(v[0])
 		case "upmbps":
-			node.Up, _ = strconv.Atoi(v[0])
+			node.Up = mbpsConvert(v[0])
 		case "protocol":
 			node.Protocol = v[0]
 		case "obfs":
@@ -344,6 +344,26 @@ func (node *HysteriaNode) convertValues(values url.Values) {
 			node.ObfsPassword = v[0]
 		}
 	}
+}
+
+// 读取字符串，将1000 Mbps 转成 1000
+func mbpsConvert(s string) int {
+	atoi, err := strconv.Atoi(s)
+	if err != nil {
+		split := strings.Split(s, " ")
+		if len(split) == 2 {
+			v := 1
+			switch split[1] {
+			case "Mbps":
+				v = 1 // 1000 Mbps
+			case "Kbps":
+				v = 1000
+			}
+			atoi, _ = strconv.Atoi(split[0])
+			return atoi * v
+		}
+	}
+	return atoi
 }
 
 func (node *HysteriaNode) check() error {
@@ -358,6 +378,21 @@ func (node *HysteriaNode) check() error {
 	}
 	if node.ServerName == "" {
 		node.ServerName = node.Server
+	}
+	if node.Up == 0 || node.Down == 0 {
+		return fmt.Errorf("need up or down")
+	}
+	if node.Type() == NodeTypeHysteria {
+		if node.AuthStr == "" {
+			return fmt.Errorf("need auth_str")
+		}
+	} else {
+		if node.Password == "" {
+			return fmt.Errorf("need password")
+		}
+		if node.ObfsPassword == "" && node.Obfs != "" {
+			return fmt.Errorf("need obfs-password")
+		}
 	}
 	return nil
 }
