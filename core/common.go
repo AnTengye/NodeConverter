@@ -31,6 +31,10 @@ func setNetwork(values url.Values, n *NetworkConfig) {
 	case "ws":
 		n.WSOpts = &WSNetworkConfig{}
 		n.WSOpts.Path = values.Get("path")
+		if values.Has("host") {
+			n.WSOpts.Headers = make(map[string]any)
+			n.WSOpts.Headers["Host"] = values.Get("host")
+		}
 	case "grpc":
 		n.GRPCOpts = &GRPCNetworkConfig{}
 		n.GRPCOpts.GRPCServiceName = values.Get("serviceName")
