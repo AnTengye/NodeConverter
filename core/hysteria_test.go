@@ -1,6 +1,9 @@
 package core
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestHysteriaNode_FromShare(t *testing.T) {
 	type fields struct {
@@ -37,7 +40,7 @@ func TestHysteriaNode_FromShare(t *testing.T) {
 			name:   "test2",
 			fields: fields{},
 			args: args{
-				s: "hysteria2://dongtaiwang.com@51.159.111.32:31180?insecure=1&sni=apple.com#%F0%9F%87%AB%F0%9F%87%B7%E6%B3%95%E5%9B%BD3-%20%E2%AC%87%EF%B8%8F%202.1MB%2Fs",
+				s: "hysteria2://b8bd42a9-551f-419d-b70d-4aefdd2cb074@108.181.23.255:443?insecure=1&sni=www.bing.com#%F0%9F%87%BA%F0%9F%87%B8%E7%BE%8E%E5%9B%BD33-%20%E2%AC%87%EF%B8%8F%202.3MB%2Fs",
 			},
 			wantErr: false,
 		},
@@ -72,7 +75,14 @@ func TestHysteriaNode_FromShare(t *testing.T) {
 			if err := node.FromShare(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("FromShare() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			t.Log(node.ToClash())
+			toShare := node.ToShare()
+			node2 := NewHYSTERIANode()
+			if err := node2.FromShare(toShare); (err != nil) != tt.wantErr {
+				t.Errorf("ToShare() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if len(strings.Split(node.ToClash(), "\n")) != len(strings.Split(node2.ToClash(), "\n")) {
+				t.Errorf("node1(%s)\n---------\n%s\nnode2(%s)\n---------\n%s", tt.args.s, node.ToClash(), toShare, node2.ToClash())
+			}
 		})
 	}
 }

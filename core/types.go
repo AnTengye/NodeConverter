@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -92,6 +94,41 @@ type TLSConfig struct {
 	RealityOpts       *RealityTlsConfig `json:"reality-opts" yaml:"reality-opts,omitempty"`
 }
 
+func (c *TLSConfig) TlSToValues() url.Values {
+	values := make(url.Values)
+	if c.TLS {
+		values.Set("tls", "true")
+		if c.RealityOpts != nil {
+			values.Set("security", "reality")
+			values.Set("pbk", c.RealityOpts.PublicKey)
+			values.Set("sid", c.RealityOpts.ShortID)
+		} else {
+			values.Set("security", "tls")
+		}
+	} else {
+		values.Set("tls", "false")
+	}
+	if c.SNI != "" {
+		values.Set("sni", c.SNI)
+	}
+	if c.ServerName != "" {
+		values.Set("sni", c.ServerName)
+	}
+	if c.ALPN != nil {
+		values.Set("alpn", strings.Join(c.ALPN, ","))
+	}
+	if c.SkipCertVerify {
+		values.Set("allowInsecure", "1")
+	}
+	if c.Fingerprint != "" {
+		values.Set("fp", c.Fingerprint)
+	}
+	if c.ClientFingerprint != "" {
+		values.Set("fp", c.ClientFingerprint)
+	}
+	return values
+}
+
 type RealityTlsConfig struct {
 	PublicKey string `json:"public-key" yaml:"public-key,omitempty"`
 	ShortID   string `json:"short-id" yaml:"short-id,omitempty"`
@@ -104,6 +141,29 @@ type NetworkConfig struct {
 	H2Opts   *H2NetworkConfig   `json:"h2-opts" yaml:"h2-opts,omitempty"`
 	GRPCOpts *GRPCNetworkConfig `json:"grpc-opts" yaml:"grpc-opts,omitempty"`
 	WSOpts   *WSNetworkConfig   `json:"ws-opts" yaml:"ws-opts,omitempty"`
+}
+
+func (c *NetworkConfig) NetworkToValues() url.Values {
+	values := make(url.Values)
+	values.Set("type", c.Network)
+	if c.HTTPOpts != nil {
+		for k, v := range c.HTTPOpts.ToValues() {
+			values[k] = v
+		}
+	} else if c.H2Opts != nil {
+		for k, v := range c.H2Opts.ToValues() {
+			values[k] = v
+		}
+	} else if c.GRPCOpts != nil {
+		for k, v := range c.GRPCOpts.ToValues() {
+			values[k] = v
+		}
+	} else if c.WSOpts != nil {
+		for k, v := range c.WSOpts.ToValues() {
+			values[k] = v
+		}
+	}
+	return values
 }
 
 // HTTPNetworkConfig
@@ -121,6 +181,24 @@ type HTTPNetworkConfig struct {
 	Headers map[string]any `json:"headers" yaml:"headers,omitempty"`
 }
 
+func (c *HTTPNetworkConfig) ToValues() url.Values {
+	values := make(url.Values)
+	if c.Method != "" {
+		values.Set("method", c.Method)
+	}
+	if c.Path != nil {
+		for _, path := range c.Path {
+			values.Add("path", path)
+		}
+	}
+	if c.Headers != nil {
+		for k, v := range c.Headers {
+			values.Set(k, fmt.Sprintf("%v", v))
+		}
+	}
+	return values
+}
+
 // H2NetworkConfig
 //
 //	host:
@@ -131,8 +209,29 @@ type H2NetworkConfig struct {
 	Path string   `json:"path" yaml:"path,omitempty"`
 }
 
+func (c *H2NetworkConfig) ToValues() url.Values {
+	values := make(url.Values)
+	if c.Path != "" {
+		values.Set("path", c.Path)
+	}
+	if c.Host != nil {
+		for _, host := range c.Host {
+			values.Add("host", host)
+		}
+	}
+	return values
+}
+
 type GRPCNetworkConfig struct {
 	GRPCServiceName string `json:"grpc-service-name" yaml:"grpc-service-name,omitempty"`
+}
+
+func (c *GRPCNetworkConfig) ToValues() url.Values {
+	values := make(url.Values)
+	if c.GRPCServiceName != "" {
+		values.Set("grpc-service-name", c.GRPCServiceName)
+	}
+	return values
 }
 
 // WSNetworkConfig
@@ -151,4 +250,17 @@ type WSNetworkConfig struct {
 	EarlyDataHeaderName      string         `json:"early-data-header-name" yaml:"early-data-header-name,omitempty"`
 	V2RayHTTPUpgrade         bool           `json:"v2ray-http-upgrade" yaml:"v2ray-http-upgrade,omitempty"`
 	V2RayHTTPUpgradeFastOpen bool           `json:"v2ray-http-upgrade-fast-open" yaml:"v2ray-http-upgrade-fast-open,omitempty"`
+}
+
+func (c *WSNetworkConfig) ToValues() url.Values {
+	values := make(url.Values)
+	if c.Path != "" {
+		values.Set("path", c.Path)
+	}
+	if c.Headers != nil {
+		for k, v := range c.Headers {
+			values.Set(k, fmt.Sprintf("%v", v))
+		}
+	}
+	return values
 }

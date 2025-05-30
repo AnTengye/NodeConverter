@@ -237,23 +237,14 @@ func (node *TuicNode) ToShare() string {
 	return node.buildBaseShareURI(
 		string(node.Type()),
 		func(builder *strings.Builder) {
-			builder.WriteString(node.Uuid)
-			builder.WriteString("@")
+			if node.Uuid != "" {
+				fmt.Fprintf(builder, "%s:%s@", node.Uuid, node.Password)
+			}
 		},
 		func(builder *strings.Builder) {
 			builder.WriteString("?encryption=none")
-			if node.ServerName != "" {
-				builder.WriteString("&sni=")
-				builder.WriteString(node.ServerName)
-			}
-			if node.ClientFingerprint != "" {
-				builder.WriteString("&fp=")
-				builder.WriteString(node.ClientFingerprint)
-			}
-			if node.ALPN != nil {
-				builder.WriteString("&alpn=")
-				builder.WriteString(strings.Join(node.ALPN, ","))
-			}
+			builder.WriteString("&")
+			builder.WriteString(node.TlSToValues().Encode())
 			if node.UdpRelayMode != "" {
 				builder.WriteString("&udp_relay_mode=")
 				builder.WriteString(node.UdpRelayMode)
@@ -261,20 +252,6 @@ func (node *TuicNode) ToShare() string {
 			if node.Version != "" {
 				builder.WriteString("&version=")
 				builder.WriteString(node.Version)
-			}
-
-			if node.TLS {
-				if node.RealityOpts != nil {
-					builder.WriteString("&security=reality")
-					builder.WriteString("&pbk=")
-					builder.WriteString(node.RealityOpts.PublicKey)
-					builder.WriteString("&sid=")
-					builder.WriteString(node.RealityOpts.ShortID)
-				} else {
-					builder.WriteString("&security=tls")
-				}
-			} else {
-				builder.WriteString("&security=none")
 			}
 		},
 	)
@@ -291,8 +268,8 @@ func (node *TuicNode) FromShare(s string) error {
 	if err != nil {
 		return fmt.Errorf("parse tuic url err: %v", err)
 	}
-	setBase(parse, &node.Normal)
 	values := parse.Query()
+	setBase(parse, &node.Normal)
 	setTLS(values, &node.TLSConfig)
 	if parse.User != nil {
 		node.Uuid = parse.User.Username()

@@ -33,7 +33,7 @@ func setNetwork(values url.Values, n *NetworkConfig) {
 		n.WSOpts.Path = values.Get("path")
 		if values.Has("host") {
 			n.WSOpts.Headers = make(map[string]any)
-			n.WSOpts.Headers["Host"] = values.Get("host")
+			n.WSOpts.Headers["host"] = values.Get("host")
 		}
 	case "grpc":
 		n.GRPCOpts = &GRPCNetworkConfig{}
@@ -66,7 +66,7 @@ func setTLS(values url.Values, t *TLSConfig) {
 	if values.Has("alpn") {
 		t.ALPN = []string{values.Get("alpn")}
 	}
-	if values.Get("allowInsecure") == "1" || values.Get("insecure") == "1" {
+	if values.Get("allowInsecure") == "1" || values.Get("insecure") == "1" || values.Get("allow_insecure") == "1" {
 		t.SkipCertVerify = true
 	}
 }
