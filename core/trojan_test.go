@@ -1,6 +1,9 @@
 package core
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestTrojanNode_FromShare(t *testing.T) {
 	type fields struct {
@@ -40,7 +43,14 @@ func TestTrojanNode_FromShare(t *testing.T) {
 			if err := node.FromShare(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("FromShare() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			t.Log(node.ToClash())
+			toShare := node.ToShare()
+			node2 := NewTrojanNode()
+			if err := node2.FromShare(toShare); (err != nil) != tt.wantErr {
+				t.Errorf("ToShare() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if len(strings.Split(node.ToClash(), "\n")) != len(strings.Split(node2.ToClash(), "\n")) {
+				t.Errorf("node1(%s)\n---------\n%s\nnode2(%s)\n---------\n%s", tt.args.s, node.ToClash(), toShare, node2.ToClash())
+			}
 		})
 	}
 }

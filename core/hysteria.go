@@ -247,21 +247,14 @@ func (node *HysteriaNode) ToShare() string {
 	return node.buildBaseShareURI(
 		string(node.Type()),
 		func(builder *strings.Builder) {
+			builder.WriteString(node.Password)
+			builder.WriteString("@")
 		},
 		func(builder *strings.Builder) {
 			builder.WriteString("?encryption=none")
-			if node.ServerName != "" {
-				builder.WriteString("&sni=")
-				builder.WriteString(node.ServerName)
-			}
-			if node.ClientFingerprint != "" {
-				builder.WriteString("&fp=")
-				builder.WriteString(node.ClientFingerprint)
-			}
-			if node.ALPN != nil {
-				builder.WriteString("&alpn=")
-				builder.WriteString(strings.Join(node.ALPN, ","))
-			}
+			tlsValues := node.TlSToValues()
+			builder.WriteString("&")
+			builder.WriteString(tlsValues.Encode())
 			if node.AuthStr != "" {
 				builder.WriteString("&auth_str=")
 				builder.WriteString(node.AuthStr)
@@ -286,19 +279,6 @@ func (node *HysteriaNode) ToShare() string {
 				builder.WriteString("&obfs_password=")
 				builder.WriteString(node.ObfsPassword)
 			}
-			if node.TLS {
-				if node.RealityOpts != nil {
-					builder.WriteString("&security=reality")
-					builder.WriteString("&pbk=")
-					builder.WriteString(node.RealityOpts.PublicKey)
-					builder.WriteString("&sid=")
-					builder.WriteString(node.RealityOpts.ShortID)
-				} else {
-					builder.WriteString("&security=tls")
-				}
-			} else {
-				builder.WriteString("&security=none")
-			}
 		},
 	)
 }
@@ -314,8 +294,8 @@ func (node *HysteriaNode) FromShare(s string) error {
 	if err != nil {
 		return fmt.Errorf("parse hysteria url err: %v", err)
 	}
-	setBase(parse, &node.Normal)
 	values := parse.Query()
+	setBase(parse, &node.Normal)
 	setTLS(values, &node.TLSConfig)
 	if parse.User != nil {
 		node.Password = parse.User.Username()
@@ -377,6 +357,7 @@ func (node *HysteriaNode) check() error {
 		}
 	}
 	if node.ServerName == "" {
+		node.SNI = node.Server
 		node.ServerName = node.Server
 	}
 	if node.Up == 0 || node.Down == 0 {

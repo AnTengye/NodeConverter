@@ -6,14 +6,18 @@
 
 ## 目前支持以下转换
 
-| 类型                   | 作为目标类型 | 参数        |
-|----------------------|:------:|-----------|
-| Clash                |   ✓    | clash     |
+| 类型                    | 作为目标类型 | 参数        |
+|-----------------------|:------:|-----------|
+| Clash                 |   ✓    | clash     |
 | Clash.Meta(推荐替代Clash) |   ✓    | clashmeta |
-| SS (SIP002)          |   ✓    | ss        |
-| Trojan               |   ✓    | trojan    |
-| V2Ray(支持vless\vmess) |   ✓    | v2ray     |
-| Auto                 |   ✓    | auto      |
+| SS (SIP002)           |   ✓    | ss        |
+| Trojan                |   ✓    | trojan    |
+| V2Ray(支持vless\vmess)  |   ✓    | v2ray     |
+| Hysteria              |   ✓    | hysteria  |
+| Hysteria2             |   ✓    | hysteria2 |
+| Websocket             |   ✓    | ws        |
+| Tuic                  |   ✓    | tuic      |
+| Auto                  |   ✓    | auto      |
 
 ## 使用
 
@@ -49,7 +53,7 @@ http://127.0.0.1:25500/sub?target=%TARGET%&url=%URL%&include=%INCLUDE%····
 | include | 可选  | 详见下文中 `Include` | 指仅保留匹配到的节点，支持正则匹配，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置 |
 | exclude | 可选  | 详见下文中 `Exclude` | 指排除匹配到的节点，支持正则匹配，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置  |
 | rename  | 可选  | 详见下文中 `Rename`  | 用于自定义重命名，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置          |
-| config  | 可选  | 详见下文中 `Config`  | 主要用于进阶设置RuleSet和ProxyGroup参数              |
+| config  | 可选  | 详见下文中 `Config`  | 主要用于进阶设置RuleSet和ProxyGroup参数                                                   |
 
 ### 配置文件
 
@@ -96,19 +100,19 @@ http://127.0.0.1:25500/sub?target=%TARGET%&url=%URL%&include=%INCLUDE%····
       ```yaml
       Rename: "\(?((x|X)?(\d+)(\.?\d+)?)((\s?倍率?:?)|(x|X))\)?@(倍率:$1)"
       ```
-      
+
 4. **Config**
 
    > 外部配置文件
    >
    > 会基于配置文件进行RuleSet和ProxyGroup的设置
 
-   - 例如:
+    - 例如:
 
-     ```bash
-     config=https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/config/ACL4SSR_Online_Full.ini
-     ```
-     
+      ```bash
+      config=https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/config/ACL4SSR_Online_Full.ini
+      ```
+
 ## 分享链接
 
 通常分享的链接格式为：

@@ -96,19 +96,15 @@ func (node *TrojanNode) ToShare() string {
 		},
 		func(builder *strings.Builder) {
 			builder.WriteString("?encryption=none")
-			if node.Network != "" {
-				builder.WriteString("&type=")
-				builder.WriteString(node.Network)
-			}
-			if node.TLSConfig.SkipCertVerify {
-				builder.WriteString("&allowInsecure=1")
-			}
+			tlsValues := node.TlSToValues()
 			if node.TLSConfig.TLS {
-				builder.WriteString("&tls=1")
+				tlsValues.Set("tls", "1")
 			}
-			if node.TLSConfig.SNI != "" {
-				builder.WriteString("&sni=")
-				builder.WriteString(node.TLSConfig.SNI)
+			builder.WriteString("&")
+			builder.WriteString(tlsValues.Encode())
+			if node.Network != "" {
+				builder.WriteString("&")
+				builder.WriteString(node.NetworkConfig.NetworkToValues().Encode())
 			}
 		},
 	)
@@ -119,8 +115,8 @@ func (node *TrojanNode) FromShare(s string) error {
 	if err != nil {
 		return fmt.Errorf("parse trojan url err: %v", err)
 	}
-	setBase(parse, &node.Normal)
 	values := parse.Query()
+	setBase(parse, &node.Normal)
 	setNetwork(values, &node.NetworkConfig)
 	setTLS(values, &node.TLSConfig)
 

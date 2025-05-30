@@ -1,6 +1,9 @@
 package core
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestVlessNode_FromClash(t *testing.T) {
 	type fields struct {
@@ -87,6 +90,14 @@ func TestVlessNode_FromShare(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:   "test-vless-ws-opts",
+			fields: fields{},
+			args: args{
+				s: "vless://53fa8faf-ba4b-4322-9c69-a3e5b1555049@185.59.218.20:8880?security=none&type=ws&path=%2F%3Fed%3D2560&host=reedfree8mahsang2.redorg.ir&sni=reedfree8mahsang2.redorg.ir#%F0%9F%87%AD%F0%9F%87%B0%E9%A6%99%E6%B8%AF1-%20%E2%AC%87%EF%B8%8F%202.9MB%2Fs",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -94,7 +105,14 @@ func TestVlessNode_FromShare(t *testing.T) {
 			if err := node.FromShare(tt.args.s); (err != nil) != tt.wantErr {
 				t.Errorf("FromShare() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			t.Log(node.ToClash())
+			toShare := node.ToShare()
+			node2 := NewVLESSNode()
+			if err := node2.FromShare(toShare); (err != nil) != tt.wantErr {
+				t.Errorf("ToShare() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if len(strings.Split(node.ToClash(), "\n")) != len(strings.Split(node2.ToClash(), "\n")) {
+				t.Errorf("node1(%s)\n---------\n%s\nnode2(%s)\n---------\n%s", tt.args.s, node.ToClash(), toShare, node2.ToClash())
+			}
 		})
 	}
 }

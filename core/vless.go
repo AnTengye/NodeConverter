@@ -236,38 +236,14 @@ func (node *VlessNode) ToShare() string {
 		func(builder *strings.Builder) {
 			builder.WriteString("?encryption=none")
 			if node.Network != "" {
-				builder.WriteString("&type=")
-				builder.WriteString(node.Network)
+				builder.WriteString("&")
+				builder.WriteString(node.NetworkConfig.NetworkToValues().Encode())
 			}
+			builder.WriteString("&")
+			builder.WriteString(node.TlSToValues().Encode())
 			if node.Flow != "" {
 				builder.WriteString("&flow=")
 				builder.WriteString(node.Flow)
-			}
-			if node.ServerName != "" {
-				builder.WriteString("&sni=")
-				builder.WriteString(node.ServerName)
-			}
-			if node.ClientFingerprint != "" {
-				builder.WriteString("&fp=")
-				builder.WriteString(node.ClientFingerprint)
-			}
-			if node.ALPN != nil {
-				builder.WriteString("&alpn=")
-				builder.WriteString(strings.Join(node.ALPN, ","))
-			}
-
-			if node.TLS {
-				if node.RealityOpts != nil {
-					builder.WriteString("&security=reality")
-					builder.WriteString("&pbk=")
-					builder.WriteString(node.RealityOpts.PublicKey)
-					builder.WriteString("&sid=")
-					builder.WriteString(node.RealityOpts.ShortID)
-				} else {
-					builder.WriteString("&security=tls")
-				}
-			} else {
-				builder.WriteString("&security=none")
 			}
 		},
 	)
@@ -329,6 +305,7 @@ func (node *VlessNode) check() error {
 		}
 	}
 	if node.ServerName == "" {
+		node.SNI = node.Server
 		node.ServerName = node.Server
 	}
 	if node.TLS && node.Network == "tcp" {

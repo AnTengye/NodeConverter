@@ -109,7 +109,9 @@ func (node *ShadowsocksNode) FromShare(s string) error {
 		if err != nil {
 			return fmt.Errorf("shadowsocks decode error: %v", err)
 		}
-		parse, err = url.Parse(parse.Scheme + "://" + string(decodeString) + "#" + parse.Fragment)
+		newUrl := parse.Scheme + "://" + string(decodeString) + "#" + parse.Fragment
+		newUrl = strings.ReplaceAll(newUrl, "\n", "")
+		parse, err = url.Parse(newUrl)
 		if err != nil {
 			return fmt.Errorf("reparse ss url err: %v", err)
 		}
@@ -117,7 +119,7 @@ func (node *ShadowsocksNode) FromShare(s string) error {
 	setBase(parse, &node.Normal)
 	values, err := url.ParseQuery(parse.RawQuery)
 	if err != nil {
-		return fmt.Errorf("parse trojan url[%s] err: %v", parse.RawQuery, err)
+		return fmt.Errorf("parse ss url[%s] err: %v", parse.RawQuery, err)
 	}
 	setNetwork(values, &node.NetworkConfig)
 	setTLS(values, &node.TLSConfig)
