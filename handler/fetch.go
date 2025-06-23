@@ -22,11 +22,25 @@ func fetchNodes(u string) ([]core.Node, error) {
 	var nodes []core.Node
 	switch checkUrlOrShare(u) {
 	case subUrl:
-		response, err := network.CacheGET(u)
-		if err != nil {
-			return nil, fmt.Errorf("download from sub error: %v", err)
+		var (
+			data []byte
+			err  error
+		)
+		if !strings.HasPrefix(u, "http://api:15831") {
+			// 从缓存中获取非内部api
+			response, networkErr := network.CacheGET(u)
+			if networkErr != nil {
+				return nil, fmt.Errorf("download from sub error: %v", networkErr)
+			}
+			data = response
+		} else {
+			resp, networkErr := network.RestyCli.R().Get(u)
+			if networkErr != nil {
+				return nil, fmt.Errorf("download from sub error: %v", networkErr)
+			}
+			data = resp.Body()
 		}
-		nodes, err = handlerSubResponse(response)
+		nodes, err = handlerSubResponse(data)
 		if err != nil {
 			network.DeleteCache(u)
 			return nil, fmt.Errorf("get sub error: %v", err)
