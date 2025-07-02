@@ -49,7 +49,7 @@ func Sub(ctx iris.Context) {
 		zap.S().Debugw("fetch url", "url", url)
 		n, fetchErr := fetchNodes(url)
 		if fetchErr != nil {
-			zap.S().Errorf("fetch url error: %v", fetchErr)
+			zap.S().Infof("fetch url error: %v", fetchErr)
 			continue
 		}
 		nodes = append(nodes, n...)

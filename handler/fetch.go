@@ -38,7 +38,7 @@ func fetchNodes(u string) ([]core.Node, error) {
 			if networkErr != nil {
 				return nil, fmt.Errorf("download from sub error: %v", networkErr)
 			}
-			data = resp.Body()
+			data = resp.Bytes()
 		}
 		nodes, err = handlerSubResponse(data)
 		if err != nil {

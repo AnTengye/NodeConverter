@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/patrickmn/go-cache"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"resty.dev/v3"
 )
 
 var (
@@ -19,6 +19,7 @@ var (
 func InitResty() {
 	RestyCli = resty.New().SetLogger(zap.S()).
 		SetDebug(viper.GetBool("API.Debug")).
+		SetDebugLogFormatter(resty.DebugLogJSONFormatter).
 		SetRetryCount(viper.GetInt("API.RetryCount")).
 		SetTimeout(time.Duration(viper.GetInt("API.Timeout")) * time.Second)
 	cacheCli = cache.New(5*time.Minute, 10*time.Minute)
@@ -39,7 +40,7 @@ func InitResty() {
 		if resp.IsError() {
 			return nil, fmt.Errorf("request error: %v", resp.Error())
 		}
-		result = resp.Body()
+		result = resp.Bytes()
 		// 缓存结果（根据需求调整过期时间）
 		cacheCli.Set(url, result, 10*time.Minute) // 根据API特性设置合理过期时间
 		return result, nil
