@@ -100,7 +100,6 @@ func handlerWithRuleItem(key string, data []byte) ([]string, error) {
 			continue
 		}
 		if strings.HasPrefix(line, "URL-REGEX") || strings.HasPrefix(line, "USER-AGENT") {
-			zap.S().Debugw("skip line", "line", line)
 			continue
 		}
 		if strings.HasSuffix(line, ",no-resolve") {
