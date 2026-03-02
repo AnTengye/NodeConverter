@@ -150,6 +150,9 @@ func (node *TrojanNode) FromClash(s []byte) error {
 	if err := yaml.Unmarshal(s, node); err != nil {
 		return fmt.Errorf("unmarshal trojan node error: %v", err)
 	}
+	if err := setUDPDefaultFromClash(s, &node.Normal); err != nil {
+		return fmt.Errorf("parse trojan udp field error: %v", err)
+	}
 	return nil
 }
 

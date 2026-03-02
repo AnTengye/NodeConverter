@@ -338,6 +338,9 @@ func (node *VlessNode) FromClash(s []byte) error {
 	if err := yaml.Unmarshal(s, node); err != nil {
 		return fmt.Errorf("unmarshal vless node error: %v", err)
 	}
+	if err := setUDPDefaultFromClash(s, &node.Normal); err != nil {
+		return fmt.Errorf("parse vless udp field error: %v", err)
+	}
 	return nil
 }
 

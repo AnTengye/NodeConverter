@@ -130,3 +130,68 @@ func TestVlessNode_FromShare_UDP(t *testing.T) {
 		t.Fatalf("ToShare() should contain udp=true, got:\n%s", node.ToShare())
 	}
 }
+
+func TestVlessNode_FromShare_UDPDefaultTrue(t *testing.T) {
+	node := NewVLESSNode()
+	err := node.FromShare("vless://55520747-311e-4015-83ce-be46e2060ce3@220.118.248.123:30012?encryption=none&security=tls&sni=ca.bgm2024.dpdns.org&allowInsecure=1&type=ws&host=ca.bgm2024.dpdns.org&path=%2F%3Fed%3D2560#udp-default-true")
+	if err != nil {
+		t.Fatalf("FromShare() error = %v", err)
+	}
+	if !strings.Contains(node.ToClash(), "udp: true") {
+		t.Fatalf("ToClash() should contain udp: true by default, got:\n%s", node.ToClash())
+	}
+	if !strings.Contains(node.ToShare(), "udp=true") {
+		t.Fatalf("ToShare() should contain udp=true by default, got:\n%s", node.ToShare())
+	}
+}
+
+func TestVlessNode_FromShare_UDPExplicitFalse(t *testing.T) {
+	node := NewVLESSNode()
+	err := node.FromShare("vless://55520747-311e-4015-83ce-be46e2060ce3@220.118.248.123:30012?encryption=none&security=tls&sni=ca.bgm2024.dpdns.org&allowInsecure=1&type=ws&host=ca.bgm2024.dpdns.org&path=%2F%3Fed%3D2560&udp=false#udp-explicit-false")
+	if err != nil {
+		t.Fatalf("FromShare() error = %v", err)
+	}
+	if strings.Contains(node.ToClash(), "udp: true") {
+		t.Fatalf("ToClash() should not contain udp: true when udp=false, got:\n%s", node.ToClash())
+	}
+	if strings.Contains(node.ToShare(), "udp=true") {
+		t.Fatalf("ToShare() should not contain udp=true when udp=false, got:\n%s", node.ToShare())
+	}
+}
+
+func TestVlessNode_FromClash_UDPDefaultTrue(t *testing.T) {
+	node := NewVLESSNode()
+	err := node.FromClash([]byte(`
+name: test
+type: vless
+server: 1.1.1.1
+port: 443
+uuid: 55520747-311e-4015-83ce-be46e2060ce3
+tls: true
+`))
+	if err != nil {
+		t.Fatalf("FromClash() error = %v", err)
+	}
+	if !strings.Contains(node.ToClash(), "udp: true") {
+		t.Fatalf("ToClash() should contain udp: true by default for clash input, got:\n%s", node.ToClash())
+	}
+}
+
+func TestVlessNode_FromClash_UDPExplicitFalse(t *testing.T) {
+	node := NewVLESSNode()
+	err := node.FromClash([]byte(`
+name: test
+type: vless
+server: 1.1.1.1
+port: 443
+uuid: 55520747-311e-4015-83ce-be46e2060ce3
+tls: true
+udp: false
+`))
+	if err != nil {
+		t.Fatalf("FromClash() error = %v", err)
+	}
+	if strings.Contains(node.ToClash(), "udp: true") {
+		t.Fatalf("ToClash() should not contain udp: true when clash input sets udp=false, got:\n%s", node.ToClash())
+	}
+}

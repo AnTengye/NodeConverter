@@ -164,6 +164,9 @@ func (node *ShadowsocksNode) FromClash(s []byte) error {
 	if err := yaml.Unmarshal(s, node); err != nil {
 		return fmt.Errorf("unmarshal Shadowsocks node error: %v", err)
 	}
+	if err := setUDPDefaultFromClash(s, &node.Normal); err != nil {
+		return fmt.Errorf("parse Shadowsocks udp field error: %v", err)
+	}
 	return nil
 }
 

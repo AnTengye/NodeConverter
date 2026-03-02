@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 func setBase(u *url.URL, normal *Normal) {
@@ -53,16 +55,35 @@ func setNetwork(values url.Values, n *NetworkConfig) {
 }
 
 func setUDP(values url.Values, normal *Normal) {
-	udp := values.Get("udp")
+	udp := strings.ToLower(strings.TrimSpace(values.Get("udp")))
 	if udp == "" {
+		normal.UDP = true
 		return
 	}
-	switch strings.ToLower(udp) {
-	case "1", "true", "yes", "on":
-		normal.UDP = true
-	default:
+	switch udp {
+	case "0", "false", "no", "off":
 		normal.UDP = false
+	default:
+		normal.UDP = true
 	}
+}
+
+func setUDPDefaultFromClash(raw []byte, normal *Normal) error {
+	m := make(map[string]any)
+	if err := yaml.Unmarshal(raw, &m); err != nil {
+		return err
+	}
+	v, ok := m["udp"]
+	if !ok {
+		normal.UDP = true
+		return nil
+	}
+	if b, isBool := v.(bool); isBool && !b {
+		normal.UDP = false
+		return nil
+	}
+	normal.UDP = true
+	return nil
 }
 
 func setTLS(values url.Values, t *TLSConfig) {
