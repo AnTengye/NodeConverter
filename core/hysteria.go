@@ -252,6 +252,9 @@ func (node *HysteriaNode) ToShare() string {
 		},
 		func(builder *strings.Builder) {
 			builder.WriteString("?encryption=none")
+			if node.UDP {
+				builder.WriteString("&udp=true")
+			}
 			tlsValues := node.TlSToValues()
 			builder.WriteString("&")
 			builder.WriteString(tlsValues.Encode())
@@ -296,6 +299,7 @@ func (node *HysteriaNode) FromShare(s string) error {
 	}
 	values := parse.Query()
 	setBase(parse, &node.Normal)
+	setUDP(values, &node.Normal)
 	setTLS(values, &node.TLSConfig)
 	if parse.User != nil {
 		node.Password = parse.User.Username()

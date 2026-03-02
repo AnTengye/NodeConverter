@@ -235,6 +235,9 @@ func (node *VlessNode) ToShare() string {
 		},
 		func(builder *strings.Builder) {
 			builder.WriteString("?encryption=none")
+			if node.UDP {
+				builder.WriteString("&udp=true")
+			}
 			if node.Network != "" {
 				builder.WriteString("&")
 				builder.WriteString(node.NetworkConfig.NetworkToValues().Encode())
@@ -272,6 +275,7 @@ func (node *VlessNode) FromShare(s string) error {
 		values = parse.Query()
 	}
 	setBase(parse, &node.Normal)
+	setUDP(values, &node.Normal)
 	setNetwork(values, &node.NetworkConfig)
 	setTLS(values, &node.TLSConfig)
 	if parse.User != nil {

@@ -3,6 +3,7 @@ package core
 import (
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -48,6 +49,19 @@ func setNetwork(values url.Values, n *NetworkConfig) {
 		n.HTTPOpts.Path = []string{values.Get("path")}
 	default:
 		return
+	}
+}
+
+func setUDP(values url.Values, normal *Normal) {
+	udp := values.Get("udp")
+	if udp == "" {
+		return
+	}
+	switch strings.ToLower(udp) {
+	case "1", "true", "yes", "on":
+		normal.UDP = true
+	default:
+		normal.UDP = false
 	}
 }
 

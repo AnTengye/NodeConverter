@@ -94,6 +94,9 @@ func (node *ShadowsocksNode) ToShare() string {
 			builder.WriteString("@")
 		},
 		func(builder *strings.Builder) {
+			if node.UDP {
+				builder.WriteString("?udp=true")
+			}
 		},
 	)
 }
@@ -121,6 +124,7 @@ func (node *ShadowsocksNode) FromShare(s string) error {
 	if err != nil {
 		return fmt.Errorf("parse ss url[%s] err: %v", parse.RawQuery, err)
 	}
+	setUDP(values, &node.Normal)
 	setNetwork(values, &node.NetworkConfig)
 	setTLS(values, &node.TLSConfig)
 	if parse.User != nil {

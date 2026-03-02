@@ -243,6 +243,9 @@ func (node *TuicNode) ToShare() string {
 		},
 		func(builder *strings.Builder) {
 			builder.WriteString("?encryption=none")
+			if node.UDP {
+				builder.WriteString("&udp=true")
+			}
 			builder.WriteString("&")
 			builder.WriteString(node.TlSToValues().Encode())
 			if node.UdpRelayMode != "" {
@@ -270,6 +273,7 @@ func (node *TuicNode) FromShare(s string) error {
 	}
 	values := parse.Query()
 	setBase(parse, &node.Normal)
+	setUDP(values, &node.Normal)
 	setTLS(values, &node.TLSConfig)
 	if parse.User != nil {
 		node.Uuid = parse.User.Username()

@@ -54,3 +54,17 @@ func TestTrojanNode_FromShare(t *testing.T) {
 		})
 	}
 }
+
+func TestTrojanNode_FromShare_UDP(t *testing.T) {
+	node := NewTrojanNode()
+	err := node.FromShare("trojan://0052c3c2-28bf-467d-b586-3b91d1c5bdc0@test.com:443?encryption=none&security=tls&type=ws&host=test.com&path=%2Fabc&udp=true#udp-test")
+	if err != nil {
+		t.Fatalf("FromShare() error = %v", err)
+	}
+	if !strings.Contains(node.ToClash(), "udp: true") {
+		t.Fatalf("ToClash() should contain udp: true, got:\n%s", node.ToClash())
+	}
+	if !strings.Contains(node.ToShare(), "udp=true") {
+		t.Fatalf("ToShare() should contain udp=true, got:\n%s", node.ToShare())
+	}
+}
