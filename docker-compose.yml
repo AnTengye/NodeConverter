@@ -15,7 +15,7 @@ services:
     environment:
       - TZ=Asia/Shanghai
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:25500/sub"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:25500/sub?target=trojan&url=trojan://pass@127.0.0.1:443"]
       interval: 30s
       timeout: 10s
       retries: 3

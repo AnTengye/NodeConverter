@@ -36,6 +36,7 @@ type SubReq struct {
 func Sub(ctx iris.Context) {
 	var req SubReq
 	if err := ctx.ReadQuery(&req); err != nil {
+		zap.S().Errorw("sub request is invalid", zap.Error(err))
 		ctx.StopWithError(iris.StatusBadRequest, err)
 		return
 	}
@@ -49,12 +50,25 @@ func Sub(ctx iris.Context) {
 		zap.S().Debugw("fetch url", "url", url)
 		n, fetchErr := fetchNodes(url)
 		if fetchErr != nil {
-			zap.S().Infof("fetch url error: %v", fetchErr)
+			zap.S().Errorw("sub request fetch failed",
+				"target", req.Target,
+				"source_url", url,
+				"config", req.Config,
+				zap.Error(fetchErr),
+			)
 			continue
 		}
 		nodes = append(nodes, n...)
 	}
 	if len(nodes) == 0 {
+		zap.S().Errorw("sub request produced no nodes",
+			"target", req.Target,
+			"url_count", len(reqUrls),
+			"config", req.Config,
+			"include", req.Include,
+			"exclude", req.Exclude,
+			"rename", req.Rename,
+		)
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("no nodes, check url, maybe protocol not support"))
 		return
 	}
@@ -77,6 +91,14 @@ func Sub(ctx iris.Context) {
 	zap.S().Debugw("filter nodes start", zap.Int("nodes", len(nodes)))
 	nodes, err = filterNodes(nodes, condition)
 	if err != nil {
+		zap.S().Errorw("sub request filter failed",
+			"target", req.Target,
+			"nodes", len(nodes),
+			"include", condition.IncludeReg,
+			"exclude", condition.ExcludeReg,
+			"rename", condition.RenameReg,
+			zap.Error(err),
+		)
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("filter nodes error: %v", err))
 		return
 	}
@@ -84,6 +106,12 @@ func Sub(ctx iris.Context) {
 	// 转换
 	result, err := convertNodes(nodes, req.Target, req.Config)
 	if err != nil {
+		zap.S().Errorw("sub request conversion failed",
+			"target", req.Target,
+			"config", req.Config,
+			"nodes", len(nodes),
+			zap.Error(err),
+		)
 		ctx.StopWithError(iris.StatusBadRequest, fmt.Errorf("convert nodes error: %v", err))
 		return
 	}

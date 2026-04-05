@@ -11,6 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const maxLoggedShareURLLength = 160
+
 func checkUrlOrShare(urlOrShare string) NodeUrlType {
 	if strings.HasPrefix(urlOrShare, "http") {
 		return subUrl
@@ -30,28 +32,33 @@ func fetchNodes(u string) ([]core.Node, error) {
 			// 从缓存中获取非内部api
 			response, networkErr := network.CacheGET(u)
 			if networkErr != nil {
+				zap.S().Errorw("fetch subscription failed", "url", u, "stage", "download", zap.Error(networkErr))
 				return nil, fmt.Errorf("download from sub error: %v", networkErr)
 			}
 			data = response
 		} else {
 			resp, networkErr := network.RestyCli.R().Get(u)
 			if networkErr != nil {
+				zap.S().Errorw("fetch subscription failed", "url", u, "stage", "download", zap.Error(networkErr))
 				return nil, fmt.Errorf("download from sub error: %v", networkErr)
 			}
 			data = resp.Bytes()
 		}
 		nodes, err = handlerSubResponse(data)
 		if err != nil {
+			zap.S().Errorw("fetch subscription failed", "url", u, "stage", "parse", zap.Error(err))
 			network.DeleteCache(u)
 			return nil, fmt.Errorf("get sub error: %v", err)
 		}
 	case shareUrl:
 		node, err := handlerSingleShareUrl(u)
 		if err != nil {
+			zap.S().Errorw("fetch share url failed", "share_url", limitForLog(u), zap.Error(err))
 			return nil, fmt.Errorf("get share error: %v", err)
 		}
 		nodes = append(nodes, node)
 	default:
+		zap.S().Errorw("fetch nodes failed", "input", limitForLog(u), "stage", "validate", "error", "url is invalid")
 		return nil, fmt.Errorf("url is invalid")
 	}
 	return nodes, nil
@@ -60,22 +67,40 @@ func fetchNodes(u string) ([]core.Node, error) {
 func handlerSubResponse(urlResponse []byte) ([]core.Node, error) {
 	sDec, err := base64.StdEncoding.DecodeString(string(urlResponse))
 	if err != nil {
-		zap.S().Infow("decode base64 error, change to clash decode", zap.Error(err))
-		return handlerClashResponse(urlResponse)
+		zap.S().Infow("subscription is not base64, fallback to clash decode", zap.Error(err))
+		nodes, clashErr := handlerClashResponse(urlResponse)
+		if clashErr != nil {
+			zap.S().Errorw("subscription clash decode failed", zap.Error(clashErr))
+			return nil, clashErr
+		}
+		return nodes, nil
 	}
 	// 按行读取
 	lines := strings.Split(string(sDec), "\n")
 	result := make([]core.Node, 0, len(lines))
-	for _, line := range lines {
+	failed := 0
+	for idx, line := range lines {
 		if line == "" {
 			continue
 		}
 		node, err := handlerSingleShareUrl(line)
 		if err != nil {
-			zap.S().Errorw("share_url convert failed", "share_url", line, zap.Error(err))
+			failed++
+			zap.S().Errorw("subscription node conversion failed",
+				"line", idx+1,
+				"share_url", limitForLog(line),
+				zap.Error(err),
+			)
 			continue
 		}
 		result = append(result, node)
+	}
+	if failed > 0 {
+		zap.S().Warnw("subscription parsed with invalid nodes",
+			"total_lines", len(lines),
+			"success_nodes", len(result),
+			"failed_nodes", failed,
+		)
 	}
 	return result, nil
 }
@@ -121,14 +146,14 @@ func handlerClashResponse(clashResponse []byte) ([]core.Node, error) {
 	for _, proxy := range proxies {
 		proxyMap, ok := proxy.(map[string]interface{})
 		if !ok {
-			zap.S().Warn("proxy format is invalid")
+			zap.S().Warnw("clash proxy format is invalid", "proxy", proxy)
 			continue
 		}
 
 		// Get the proxy type
 		proxyType, ok := proxyMap["type"].(string)
 		if !ok {
-			zap.S().Warnw("proxy type is not a string", zap.Any("proxy", proxyMap["type"]))
+			zap.S().Warnw("clash proxy type is invalid", "proxy_name", proxyMap["name"], zap.Any("proxy_type", proxyMap["type"]))
 			continue
 		}
 
@@ -148,15 +173,26 @@ func handlerClashResponse(clashResponse []byte) ([]core.Node, error) {
 		case core.NodeTypeHysteria, core.NodeTypeHysteria2:
 			node = core.NewHYSTERIANode()
 		default:
-			zap.S().Warnf("%s is not supported", proxyType)
+			zap.S().Warnw("clash proxy type is not supported", "proxy_name", proxyMap["name"], "proxy_type", proxyType)
 			continue
 		}
 		err := node.FromClash(proxyBytes)
 		if err != nil {
-			zap.S().Errorf("convert failed: %v", err)
+			zap.S().Errorw("clash proxy conversion failed",
+				"proxy_name", proxyMap["name"],
+				"proxy_type", proxyType,
+				zap.Error(err),
+			)
 			continue
 		}
 		result = append(result, node)
 	}
 	return result, nil
+}
+
+func limitForLog(value string) string {
+	if len(value) <= maxLoggedShareURLLength {
+		return value
+	}
+	return value[:maxLoggedShareURLLength] + "...(truncated)"
 }
