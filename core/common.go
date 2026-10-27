@@ -18,6 +18,7 @@ func setBase(u *url.URL, normal *Normal) {
 	port, _ := strconv.Atoi(portStr)
 	normal.Server = u.Hostname()
 	normal.Port = port
+	normal.IPVersion = u.Query().Get("ip-version")
 	if u.Fragment != "" {
 		normal.Name = u.Fragment
 	} else {
@@ -94,9 +95,12 @@ func setTLS(values url.Values, t *TLSConfig) {
 		t.RealityOpts = &RealityTlsConfig{}
 		t.RealityOpts.PublicKey = values.Get("pbk")
 		t.RealityOpts.ShortID = values.Get("sid")
+		if support, err := strconv.ParseBool(values.Get("support-x25519mlkem768")); err == nil {
+			t.RealityOpts.SupportX25519MLKEM768 = &support
+		}
 	}
 	t.TLS = security == "tls" || security == "reality"
-	t.Fingerprint = values.Get("fp")
+	t.Fingerprint = values.Get("pinSHA256")
 	t.ClientFingerprint = values.Get("fp")
 	if values.Has("alpn") {
 		t.ALPN = []string{values.Get("alpn")}

@@ -351,7 +351,6 @@ func mbpsConvert(s string) int {
 }
 
 func (node *HysteriaNode) check() error {
-	node.Fingerprint = ""
 	if node.RealityOpts != nil {
 		if node.ClientFingerprint == "" {
 			return fmt.Errorf("reality-opts need client-fingerprint")

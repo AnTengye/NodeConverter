@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -53,13 +54,19 @@ func (n *Normal) buildBaseShareURI(scheme string, addUserInfo func(*strings.Buil
 	if addUserInfo != nil {
 		addUserInfo(&builder)
 	}
-	builder.WriteString(n.Server)
-	builder.WriteString(":")
-	builder.WriteString(strconv.Itoa(n.Port))
+	builder.WriteString(net.JoinHostPort(n.Server, strconv.Itoa(n.Port)))
 
 	// ... 其他通用参数 ...
+	queryStart := builder.Len()
 	if customQueryBuilder != nil {
 		customQueryBuilder(&builder)
+	}
+	if n.IPVersion != "" {
+		separator := "&"
+		if builder.Len() == queryStart {
+			separator = "?"
+		}
+		builder.WriteString(separator + "ip-version=" + url.QueryEscape(n.IPVersion))
 	}
 
 	builder.WriteString("#")
@@ -102,6 +109,9 @@ func (c *TLSConfig) TlSToValues() url.Values {
 			values.Set("security", "reality")
 			values.Set("pbk", c.RealityOpts.PublicKey)
 			values.Set("sid", c.RealityOpts.ShortID)
+			if c.RealityOpts.SupportX25519MLKEM768 != nil {
+				values.Set("support-x25519mlkem768", strconv.FormatBool(*c.RealityOpts.SupportX25519MLKEM768))
+			}
 		} else {
 			values.Set("security", "tls")
 		}
@@ -121,7 +131,7 @@ func (c *TLSConfig) TlSToValues() url.Values {
 		values.Set("allowInsecure", "1")
 	}
 	if c.Fingerprint != "" {
-		values.Set("fp", c.Fingerprint)
+		values.Set("pinSHA256", c.Fingerprint)
 	}
 	if c.ClientFingerprint != "" {
 		values.Set("fp", c.ClientFingerprint)
@@ -130,8 +140,9 @@ func (c *TLSConfig) TlSToValues() url.Values {
 }
 
 type RealityTlsConfig struct {
-	PublicKey string `json:"public-key" yaml:"public-key,omitempty"`
-	ShortID   string `json:"short-id" yaml:"short-id,omitempty"`
+	PublicKey             string `json:"public-key" yaml:"public-key,omitempty"`
+	ShortID               string `json:"short-id" yaml:"short-id,omitempty"`
+	SupportX25519MLKEM768 *bool  `json:"support-x25519mlkem768,omitempty" yaml:"support-x25519mlkem768,omitempty"`
 }
 
 type NetworkConfig struct {
